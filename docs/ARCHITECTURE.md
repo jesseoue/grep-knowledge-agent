@@ -50,7 +50,12 @@ Nuxt 4 + Nitro application that serves:
 
 ### 2. Sandbox service (`sandbox-service`)
 
-A tiny Node HTTP server that is the **only** service with the snapshot volume mounted. It:
+A tiny Node HTTP server that is the **only** service with the snapshot volume mounted. It exposes two endpoints:
+
+- **`POST /run`** — read-only commands for the AI agent (grep/find/cat). Validated through the strict read-only shell policy.
+- **`POST /sync-run`** — sync commands for the web service (git/mkdir/find for repo cloning). Validated through a separate sync policy that allows write operations but still blocks dangerous patterns and restricts paths to `/snapshot`.
+
+Both endpoints:
 
 - Executes commands via `execFile` against `bash -c` (read-only policy enforced first)
 - **Allowlists commands**: `find`, `ls`, `tree`, `grep`, `egrep`, `fgrep`, `cat`, `head`, `tail`, `less`, `more`, `wc`, `sort`, `uniq`, `cut`, `awk`, `sed`, `tr`, `column`, `echo`, `printf`, `test`, `[`, `true`, `false`, `basename`, `dirname`, `realpath`, `file`, `stat`, `du`, `diff`, `comm`, `xargs`, `tee`, `md5sum`, `sha256sum`

@@ -4,7 +4,7 @@
 
 A self-hosted AI knowledge agent that replaces vector embeddings with `grep`, `find`, and `cat`. Give the LLM a filesystem and `bash` — it searches your docs deterministically, explains every step, and costs ~75% less than vector RAG. No vector database, no Vercel lock-in.
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/grep-knowledge-agent)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template?ref=https://github.com/jesseoue/grep-knowledge-agent)
 
 ```
 ┌─────────────┐   ┌──────────────────────────────────────────┐   ┌──────────────┐

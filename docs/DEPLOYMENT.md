@@ -2,7 +2,7 @@
 
 ## One-click on Railway
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/grep-knowledge-agent)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template?ref=https://github.com/jesseoue/grep-knowledge-agent)
 
 The template provisions:
 

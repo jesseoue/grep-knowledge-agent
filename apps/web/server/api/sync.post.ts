@@ -79,7 +79,7 @@ async function syncRepoToSandbox(repo: string, branch: string, contentPath?: str
     `find /snapshot/gh/${repo.split('/').join('_')} -type d -empty -delete`,
   ]
 
-  const response = await fetch(`${sandboxUrl}/run`, {
+  const response = await fetch(`${sandboxUrl}/sync-run`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ commands }),
