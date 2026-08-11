@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { generateText, stepCountIs } from 'ai'
 import { createSavoir } from '@grep/sdk'
-import { routeQuestion } from '@grep/agent'
+import { routeQuestion, buildChatSystemPrompt } from '@grep/agent'
 import { getAgentConfig } from '../lib/agent-config'
 import { requireUserSession } from '../lib/session'
 import { resolveRouterModel, resolveModel, hasAIProvider } from '../lib/models'
@@ -57,13 +57,10 @@ export default defineEventHandler(async (event) => {
   try {
     const { text, steps } = await generateText({
       model: mainModel,
-      system: [
-        'You are a knowledge agent. Answer questions using the files in the knowledge base.',
-        `Response style: ${agentConfig.responseStyle || 'concise'}`,
-        agentConfig.additionalPrompt || '',
+      system: buildChatSystemPrompt({
+        ...agentConfig,
         searchInstructions,
-        'Cite the files you read inline as [filename].',
-      ].filter(Boolean).join('\n\n'),
+      }),
       messages: body.messages,
       tools: {
         bash: savoir.tools.bash,

@@ -1,16 +1,5 @@
-import { eq } from 'drizzle-orm'
 import { getDb, schema } from '../db'
-
-export interface AgentConfigData {
-  additionalPrompt?: string
-  responseStyle?: string
-  language?: string
-  defaultModel?: string
-  maxStepsMultiplier?: number
-  temperature?: number
-  searchInstructions?: string
-  citationFormat?: string
-}
+import type { AgentConfigData } from '@grep/agent'
 
 const DEFAULT_CONFIG: AgentConfigData = {
   responseStyle: 'concise',

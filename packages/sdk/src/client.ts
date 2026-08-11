@@ -144,8 +144,4 @@ export class SavoirClient {
   async sync(): Promise<SyncResponse> {
     return await this.post<SyncResponse>('/api/sync')
   }
-
-  async createSnapshot(): Promise<{ status: string, message: string }> {
-    return await this.post<{ status: string, message: string }>('/api/sandbox/snapshot', {})
-  }
 }

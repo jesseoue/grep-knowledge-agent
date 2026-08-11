@@ -40,7 +40,7 @@ Nuxt 4 + Nitro application that serves:
 - **Chat UI** — streaming agent conversations
 - **Settings** — add/manage sources, trigger syncs
 - **REST API** — `POST /api/chats`, `POST /api/sandbox/shell`, `POST /api/sync`, `GET /api/sources`
-- **Agent loop** — a `ToolLoopAgent` (from the AI SDK) that decides which `bash` commands to run, executes them through the sandbox, and composes an answer with citations.
+- **Agent loop** — the AI SDK's `generateText` with tool calls: the model decides which `bash` commands to run, executes them through the sandbox, and composes an answer with citations.
 - **Complexity router** — a lightweight model classifies each question into `trivial | simple | moderate | complex`, selecting the model and step budget:
   - trivial (4 steps) → `gemini-2.0-flash` or `gpt-4o-mini`
   - simple (8 steps) → `gemini-2.0-flash` or `gpt-4o-mini`
@@ -90,10 +90,11 @@ This is defense-in-depth: even if one validation layer is bypassed, the next cat
 User adds source (owner/repo)  →  POST /api/sources
 User clicks "Sync"             →  POST /api/sync
                                    │
-                                   ├─ web: git clone --depth 1 --branch <branch>
-                                   │        https://github.com/<owner>/<repo>.git
-                                   │        /snapshot/gh/<owner>_<repo>
-                                   ├─ web: find ... -delete  (docs-only filter)
+                                   ├─ web → sandbox /sync-run:
+                                   │        git clone --depth 1 --branch <branch>
+                                   │          https://github.com/<owner>/<repo>.git
+                                   │          /snapshot/gh/<owner>_<repo>
+                                   │        find ... -delete  (docs-only filter)
                                    │        find ... -type d -empty -delete
                                    └─ sandbox volume updated → agent can grep it
 ```
@@ -104,11 +105,11 @@ User clicks "Sync"             →  POST /api/sync
 User message → POST /api/chats
               ├─ router model classifies complexity (4/8/15/25 steps)
               ├─ main model instantiated (provider from env keys)
-              ├─ ToolLoopAgent:
+              ├─ generateText with bash tools:
               │    ├─ bash / bash_batch tool → POST /api/sandbox/shell
               │    │                          → sandbox grep/find/cat
               │    └─ compose answer + citations
-              └─ response streamed back with file references
+              └─ response returned with file references
 ```
 
 ## Why not a vector DB?
