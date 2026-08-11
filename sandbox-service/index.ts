@@ -12,7 +12,7 @@
 import { createServer } from 'node:http'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { validateShellCommand } from '@grep/sdk'
+import { validateShellCommand } from './shell-policy.ts'
 
 const execFileAsync = promisify(execFile)
 

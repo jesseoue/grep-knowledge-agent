@@ -8,6 +8,7 @@ COPY package.json bun.lock* bunfig.toml* ./
 COPY apps/web/package.json apps/web/package.json
 COPY packages/agent/package.json packages/agent/package.json
 COPY packages/sdk/package.json packages/sdk/package.json
+COPY sandbox-service/package.json sandbox-service/package.json
 
 # Install all workspace deps
 RUN bun install --frozen-lockfile || bun install

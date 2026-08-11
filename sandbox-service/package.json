@@ -9,9 +9,6 @@
     "dev": "bun run index.ts",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@grep/sdk": "workspace:*"
-  },
   "devDependencies": {
     "@types/node": "^25.2.2",
     "typescript": "^5.9.3"
