@@ -13,15 +13,14 @@
   "scripts": {
     "dev": "bun run --filter ./apps/web dev",
     "build": "bun run --filter ./apps/web build",
-    "typecheck": "bun run --filter ./apps/web typecheck",
+    "typecheck": "bun run --filter ./apps/web typecheck && bun run --filter ./packages/agent typecheck && bun run --filter ./packages/sdk typecheck && bun run --filter ./sandbox-service typecheck",
     "db:generate": "bun run --filter ./apps/web db:generate",
     "db:migrate": "bun run --filter ./apps/web db:migrate",
-    "sandbox": "bun run sandbox-service/index.ts",
-    "lint": "eslint ."
+    "db:push": "bun run --filter ./apps/web db:push",
+    "sandbox": "bun run sandbox-service/index.ts"
   },
   "packageManager": "bun@1.3.14",
   "devDependencies": {
-    "turbo": "^2.8.3",
     "typescript": "^5.9.3"
   }
 }

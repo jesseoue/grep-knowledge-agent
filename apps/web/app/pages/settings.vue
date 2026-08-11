@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { authClient } from '~/lib/auth-client'
 
 const sources = ref<Array<{ id: string, type: string, label: string, repo?: string, branch?: string }>>([])
 const snapshotRepo = ref('')
@@ -7,6 +8,13 @@ const snapshotBranch = ref('main')
 const loading = ref(false)
 const message = ref('')
 const error = ref('')
+
+const session = authClient.useSession()
+
+async function logout() {
+  await authClient.signOut()
+  await navigateTo('/login')
+}
 
 const newSource = ref({
   type: 'github' as string,
@@ -98,9 +106,21 @@ async function runSync() {
           <UButton to="/" icon="i-lucide-arrow-left" color="neutral" variant="ghost" square />
           <h1 class="text-lg font-semibold">Settings</h1>
         </div>
-        <UButton :loading="loading" icon="i-lucide-refresh-cw" color="primary" size="sm" @click="runSync">
-          Sync sources
-        </UButton>
+        <div class="flex items-center gap-2">
+          <UButton :loading="loading" icon="i-lucide-refresh-cw" color="primary" size="sm" @click="runSync">
+            Sync sources
+          </UButton>
+          <UButton
+            v-if="session?.data"
+            icon="i-lucide-log-out"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            @click="logout"
+          >
+            Sign out
+          </UButton>
+        </div>
       </div>
     </header>
 

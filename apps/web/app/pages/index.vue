@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { authClient } from '~/lib/auth-client'
 
 const message = ref('')
 const loading = ref(false)
@@ -7,6 +8,13 @@ const messages = ref<Array<{ role: 'user' | 'assistant', content: string, refere
 const sources = ref<{ total: number, github: { count: number }, youtube: { count: number }, file: { count: number }, snapshotRepo: string | null } | null>(null)
 
 const chatScroll = ref<HTMLDivElement | null>(null)
+
+const session = authClient.useSession()
+
+async function logout() {
+  await authClient.signOut()
+  await navigateTo('/login')
+}
 
 onMounted(async () => {
   try {
@@ -78,6 +86,16 @@ async function sendMessage() {
         </span>
         <UButton to="/settings" icon="i-lucide-settings" color="neutral" variant="ghost" size="sm">
           Settings
+        </UButton>
+        <UButton
+          v-if="session?.data"
+          icon="i-lucide-log-out"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          @click="logout"
+        >
+          Sign out
         </UButton>
       </div>
     </header>
