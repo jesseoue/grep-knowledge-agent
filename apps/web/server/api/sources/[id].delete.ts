@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
 import { getDb, schema } from '../../db'
+import { requireUserSession } from '../../lib/session'
 
 export default defineEventHandler(async (event) => {
   await requireUserSession(event)

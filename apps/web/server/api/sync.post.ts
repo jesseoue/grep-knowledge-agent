@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { getDb, schema } from '../db'
+import { requireUserSession } from '../lib/session'
 
 const syncBodySchema = z.object({
   sources: z.array(z.string()).optional(),

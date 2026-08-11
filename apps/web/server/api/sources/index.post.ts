@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { getDb, schema } from '../../db'
+import { requireUserSession } from '../../lib/session'
 
 const sourceSchema = z.object({
   type: z.enum(['github', 'youtube', 'file']),

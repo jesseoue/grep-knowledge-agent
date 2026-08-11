@@ -6,6 +6,7 @@ import { generateText } from 'ai'
 import { createSavoir } from '@grep/sdk'
 import { routeQuestion } from '@grep/agent'
 import { getAgentConfig } from '../lib/agent-config'
+import { requireUserSession } from '../lib/session'
 
 const bodySchema = z.object({
   messages: z.array(z.object({
