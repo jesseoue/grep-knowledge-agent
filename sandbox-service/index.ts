@@ -18,7 +18,6 @@ const execFileAsync = promisify(execFile)
 
 const SNAPSHOT_DIR = process.env.SNAPSHOT_DIR || '/snapshot'
 const PORT = Number(process.env.PORT || 3200)
-
 interface RunRequest {
   commands?: string[]
   sessionId?: string
@@ -70,7 +69,7 @@ const server = createServer(async (req, res) => {
 
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
 
-  if (req.method === 'GET' && url.pathname === '/health') {
+  if (req.method === 'GET' && (url.pathname === '/health' || url.pathname === '/api/health')) {
     json(res, 200, { status: 'ok', snapshotDir: SNAPSHOT_DIR })
     return
   }
@@ -108,6 +107,6 @@ const server = createServer(async (req, res) => {
   json(res, 404, { error: 'Not found' })
 })
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`[sandbox] listening on :${PORT}, snapshot dir: ${SNAPSHOT_DIR}`)
 })
