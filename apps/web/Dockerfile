@@ -28,6 +28,7 @@ ENV HOST=0.0.0.0
 ENV PORT=3000
 
 COPY --from=base /app/apps/web/.output ./apps/web/.output
+COPY --from=base /app/apps/web/server/db/migrations ./apps/web/server/db/migrations
 COPY --from=base /app/node_modules ./node_modules
 
 EXPOSE 3000

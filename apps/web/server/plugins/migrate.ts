@@ -13,9 +13,15 @@ export default defineNitroPlugin(async () => {
   try {
     const db = getDb()
     const sql = getSql()
-    await migrate(db, { migrationsFolder: 'server/db/migrations' })
+
+    // In production (Docker), CWD is /app and migrations are at apps/web/server/db/migrations
+    // In dev, CWD is apps/web and migrations are at server/db/migrations
+    const migrationsFolder = process.env.NODE_ENV === 'production'
+      ? 'apps/web/server/db/migrations'
+      : 'server/db/migrations'
+
+    await migrate(db, { migrationsFolder })
     console.log('[db] migrations applied')
-    // Close the raw connection pool used only for migration setup
     await sql.end()
   } catch (error) {
     console.error('[db] migration failed:', error)
