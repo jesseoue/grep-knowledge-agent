@@ -1,0 +1,42 @@
+{
+  "name": "@grep/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Grep Knowledge Agent web app (Nuxt 4 + Nitro)",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "start": "node .output/server/index.mjs",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@grep/agent": "workspace:*",
+    "@grep/sdk": "workspace:*",
+    "@ai-sdk/anthropic": "^2.0.10",
+    "@ai-sdk/google": "^2.0.10",
+    "@ai-sdk/openai": "^2.0.10",
+    "@ai-sdk/vue": "^3.0.85",
+    "@iconify-json/lucide": "^1.2.89",
+    "@nuxt/ui": "^4.4.0",
+    "@nuxtjs/mdc": "^0.20.1",
+    "ai": "^6.0.85",
+    "better-auth": "1.5.1",
+    "drizzle-orm": "^0.45.1",
+    "drizzle-kit": "^0.31.9",
+    "ioredis": "^5.6.1",
+    "nuxt": "^4.3.1",
+    "postgres": "^3.4.5",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.2",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.2.4"
+  }
+}

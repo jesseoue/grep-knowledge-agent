@@ -1,0 +1,6 @@
+[install]
+# Workspace-aware installs
+linkWorkspacePackages = true
+
+[install.cache]
+disable = false

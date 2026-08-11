@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Builds
+.output/
+.nuxt/
+dist/
+.nitro/
+build/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+
+# Testing
+coverage/
+.nyc_output/
+
+# Data
+data/
+*.sqlite
+*.sqlite3
+
+# Railway
+.railway/
