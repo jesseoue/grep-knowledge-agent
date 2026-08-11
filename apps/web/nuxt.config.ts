@@ -34,11 +34,11 @@ export default defineNuxtConfig({
     githubClientSecret: '',
     snapshotRepo: '',
     snapshotBranch: 'main',
-    sandboxUrl: 'http://sandbox:3000',
+    sandboxUrl: 'http://sandbox.railway.internal:3200',
+    // AI provider keys (bring-your-own-key — at least one required)
     openaiApiKey: '',
     anthropicApiKey: '',
     googleApiKey: '',
-    webSearchProvider: 'none',
     public: {
       siteUrl: '',
       githubAppName: 'Grep Knowledge Agent',

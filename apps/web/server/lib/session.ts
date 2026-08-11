@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3'
 import { getAuth } from './auth'
 
-export async function getUserSession(event: H3Event): Promise<{ user: { id: string, email: string, name: string, role?: string }, session: { id: string } } | null> {
+export async function getUserSession(event: H3Event): Promise<{ user: { id: string, email: string, name: string }, session: { id: string } } | null> {
   try {
     const auth = getAuth()
     const session = await auth.api.getSession({ headers: event.headers })
@@ -11,7 +11,6 @@ export async function getUserSession(event: H3Event): Promise<{ user: { id: stri
         id: session.user.id,
         email: session.user.email,
         name: session.user.name,
-        role: session.user.role,
       },
       session: { id: session.session.id },
     }

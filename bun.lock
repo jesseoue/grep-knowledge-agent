@@ -65,9 +65,6 @@
     "sandbox-service": {
       "name": "grep-sandbox-service",
       "version": "1.0.0",
-      "dependencies": {
-        "@grep/sdk": "workspace:*",
-      },
       "devDependencies": {
         "@types/node": "^25.2.2",
         "typescript": "^5.9.3",

@@ -24,17 +24,29 @@ Agent configuration lives in the `agent_config` table and is seeded via the app:
 
 ## Model routing
 
-The complexity router classifies questions and selects models. You can remap models via the `agent_config.default_model` and by editing `apps/web/server/api/chats.post.ts`:
+The complexity router classifies questions and selects models. The model registry lives in `packages/agent/src/models.ts` — update it there and every consumer picks it up:
 
 ```ts
-const modelMap = {
-  'gemini-flash': () => google('gemini-1.5-flash'),
-  'sonnet': () => anthropic('claude-sonnet-4-20250514'),
-  'opus': () => anthropic('claude-opus-4-20250514'),
-  'gpt-4o-mini': () => openai('gpt-4o-mini'),
-  'gpt-4o': () => openai('gpt-4o'),
+export const MODEL_ALIASES = {
+  'gemini-flash': 'gemini-2.0-flash',
+  'sonnet': 'claude-sonnet-4-20250514',
+  'opus': 'claude-opus-4-20250514',
+  'haiku': 'claude-haiku-4-20250514',
+  'gpt-4o-mini': 'gpt-4o-mini',
+  'gpt-4o': 'gpt-4o',
 }
 ```
+
+The router model (used to classify questions) defaults to `haiku` (Claude Haiku 4 — fast and cheap). The main model is selected by the router based on question complexity:
+
+| Complexity | Model | Max steps |
+|---|---|---|
+| trivial | `gemini-flash` or `gpt-4o-mini` | 4 |
+| simple | `gemini-flash` or `gpt-4o-mini` | 8 |
+| moderate | `sonnet` or `gpt-4o` | 15 |
+| complex | `opus` | 25 |
+
+To change which provider handles which tier, edit the model aliases in `packages/agent/src/models.ts`.
 
 ## Using the SDK outside the app
 
@@ -55,8 +67,4 @@ console.log(result.stdout)
 
 ## Extending the sandbox command allowlist
 
-Edit `packages/sdk/src/shell-policy.ts` → `ALLOWED_BASH_COMMANDS`. Remember: the web service and sandbox both validate, so update the shared SDK package (imported by both).
-
-## Uploading files
-
-The `file` source type is designed for direct file uploads into the snapshot (e.g. meeting transcripts, PDFs-to-markdown). It's stubbed in the UI — the API shape is `POST /api/sources` with `{ type: 'file', files: [...] }`, and the sandbox writes them under `/snapshot/files/<id>/`.
+Edit `packages/sdk/src/shell-policy.ts` → `ALLOWED_BASH_COMMANDS`. Remember: the web service and sandbox both validate, so update the shared SDK package (imported by both). The sandbox service has its own vendored copy at `sandbox-service/shell-policy.ts` — update both to keep them in sync.

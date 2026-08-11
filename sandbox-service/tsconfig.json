@@ -3,7 +3,8 @@
   "compilerOptions": {
     "module": "esnext",
     "moduleResolution": "bundler",
-    "types": ["node"]
+    "types": ["node"],
+    "allowImportingTsExtensions": true
   },
-  "include": ["index.ts"]
+  "include": ["index.ts", "shell-policy.ts"]
 }

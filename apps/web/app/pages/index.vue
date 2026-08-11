@@ -76,7 +76,7 @@ async function sendMessage() {
           {{ sources.total }} sources
           <span v-if="sources.snapshotRepo" class="ml-1 font-mono">· {{ sources.snapshotRepo }}</span>
         </span>
-        <UButton to="/settings" icon="i-lucide-settings" color="gray" variant="ghost" size="sm">
+        <UButton to="/settings" icon="i-lucide-settings" color="neutral" variant="ghost" size="sm">
           Settings
         </UButton>
       </div>

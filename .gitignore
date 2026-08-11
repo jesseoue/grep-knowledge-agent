@@ -42,3 +42,6 @@ data/
 
 # Railway
 .railway/
+
+# Reference source (cloned upstream for study — not part of the template)
+source-ref/

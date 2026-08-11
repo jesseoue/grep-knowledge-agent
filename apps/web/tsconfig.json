@@ -1,5 +1,5 @@
 {
-  "extends": "../../apps/web/.nuxt/tsconfig.json",
+  "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
     "moduleResolution": "bundler",
     "types": ["node"]

@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, syncBodySchema.parse).catch(() => ({ sources: undefined }))
 
   const db = getDb()
-  let allSources
+  let allSources: typeof schema.sources.$inferSelect[]
   try {
     allSources = await db.select().from(schema.sources)
   } catch {
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-      await syncRepoToSandbox(source.repo, source.branch || 'main', source.contentPath)
+      await syncRepoToSandbox(source.repo, source.branch || 'main', source.contentPath || undefined)
       results.push({ sourceId: source.id, label: source.label, success: true })
     } catch (error) {
       results.push({
@@ -67,7 +67,7 @@ export default defineEventHandler(async (event) => {
 })
 
 async function syncRepoToSandbox(repo: string, branch: string, contentPath?: string) {
-  const sandboxUrl = (process.env.SANDBOX_URL || 'http://localhost:3200').replace(/\/$/, '')
+  const sandboxUrl = (process.env.SANDBOX_URL || 'http://sandbox.railway.internal:3200').replace(/\/$/, '')
   const target = contentPath ? `${contentPath}` : '.'
 
   // Clone (or pull) the repo inside the snapshot volume via the sandbox service.

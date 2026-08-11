@@ -14,7 +14,7 @@ export interface ShellExecuteOptions {
 }
 
 const MAX_OUTPUT = 50000
-const DEFAULT_SANDBOX_URL = 'http://localhost:3200'
+const DEFAULT_SANDBOX_URL = 'http://sandbox.railway.internal:3200'
 
 /**
  * Calls the sandbox service to execute read-only commands inside the snapshot volume.

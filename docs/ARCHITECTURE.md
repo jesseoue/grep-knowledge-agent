@@ -42,10 +42,10 @@ Nuxt 4 + Nitro application that serves:
 - **REST API** — `POST /api/chats`, `POST /api/sandbox/shell`, `POST /api/sync`, `GET /api/sources`
 - **Agent loop** — a `ToolLoopAgent` (from the AI SDK) that decides which `bash` commands to run, executes them through the sandbox, and composes an answer with citations.
 - **Complexity router** — a lightweight model classifies each question into `trivial | simple | moderate | complex`, selecting the model and step budget:
-  - trivial (4 steps) → flash model
-  - simple (8 steps) → flash model
-  - moderate (15 steps) → sonnet / gpt-4o
-  - complex (25 steps) → opus
+  - trivial (4 steps) → `gemini-2.0-flash` or `gpt-4o-mini`
+  - simple (8 steps) → `gemini-2.0-flash` or `gpt-4o-mini`
+  - moderate (15 steps) → `claude-sonnet-4` / `gpt-4o`
+  - complex (25 steps) → `claude-opus-4`
 - **GitHub sync** — clones configured `owner/repo` sources into the snapshot volume, keeping only docs files (`*.md`, `*.mdx`, `*.yml`, `*.yaml`, `*.json`).
 
 ### 2. Sandbox service (`sandbox-service`)
@@ -58,7 +58,7 @@ A tiny Node HTTP server that is the **only** service with the snapshot volume mo
 - **Restricts paths** to `/snapshot` — no traversal outside the volume
 - Enforces a 15s timeout and 5MB output cap per command
 
-The web service reaches it over the Railway private network (`SANDBOX_URL`, default `http://sandbox:3000`).
+The web service reaches it over the Railway private network (`SANDBOX_URL`, default `http://sandbox.railway.internal:3200`).
 
 ### 3. Data layer
 

@@ -95,7 +95,7 @@ async function runSync() {
     <header class="border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-900">
       <div class="mx-auto flex max-w-4xl items-center justify-between">
         <div class="flex items-center gap-3">
-          <UButton to="/" icon="i-lucide-arrow-left" color="gray" variant="ghost" square />
+          <UButton to="/" icon="i-lucide-arrow-left" color="neutral" variant="ghost" square />
           <h1 class="text-lg font-semibold">Settings</h1>
         </div>
         <UButton :loading="loading" icon="i-lucide-refresh-cw" color="primary" size="sm" @click="runSync">
@@ -160,7 +160,7 @@ async function runSync() {
               <p class="text-sm font-medium">{{ s.label }}</p>
               <p class="text-xs text-gray-500">{{ s.repo }} · {{ s.branch }}</p>
             </div>
-            <UButton icon="i-lucide-trash-2" color="gray" variant="ghost" size="sm" @click="removeSource(s.id)" />
+            <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" size="sm" @click="removeSource(s.id)" />
           </div>
         </div>
       </section>

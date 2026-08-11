@@ -2,7 +2,7 @@
 
 ## One-click on Railway
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template/your-template-code)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/grep-knowledge-agent)
 
 The template provisions:
 
@@ -13,9 +13,17 @@ The template provisions:
 
 ### After deploy
 
-1. Set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` (see [ENVIRONMENT.md](ENVIRONMENT.md)).
-2. Set at least one AI provider key (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GOOGLE_API_KEY`).
+1. Set an AI provider key — at least one of:
+   - `OPENAI_API_KEY` → <https://platform.openai.com/api-keys>
+   - `ANTHROPIC_API_KEY` → <https://console.anthropic.com/settings/keys>
+   - `GOOGLE_GENERATIVE_AI_API_KEY` → <https://aistudio.google.com/apikey>
+
+   See [ENVIRONMENT.md](ENVIRONMENT.md) for detailed instructions.
+
+2. Set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` (see [ENVIRONMENT.md](ENVIRONMENT.md) → "Setting up GitHub OAuth").
+
 3. Open your app → **Settings** → add a GitHub source (e.g. `vercel-labs/knowledge-agent-template`) → **Sync**.
+
 4. Ask it anything. It answers with `grep`, not vectors.
 
 ## Manual deploy
@@ -40,7 +48,7 @@ bun run start
 ## Health checks
 
 - Web: `GET /api/health` → `{"status":"ok"}` (used by Railway readiness check)
-- Sandbox: `GET /health` → `{"status":"ok"}`
+- Sandbox: `GET /health` or `GET /api/health` → `{"status":"ok"}`
 
 ## Volumes
 

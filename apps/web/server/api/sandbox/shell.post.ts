@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { executeInSandbox } from '../../lib/sandbox'
+import { requireUserSession } from '../../lib/session'
 
 const bodySchema = z.object({
   command: z.string().min(1).max(2000).optional(),
@@ -11,10 +12,7 @@ const bodySchema = z.object({
 )
 
 export default defineEventHandler(async (event) => {
-  const session = await getUserSession(event)
-  if (!session) {
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-  }
+  await requireUserSession(event)
 
   const body = await readValidatedBody(event, bodySchema.parse)
   const commands = body.commands || [body.command!]
