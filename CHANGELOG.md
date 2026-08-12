@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2026-08-12
+
+### Fixed — production deploy
+- **Docker port binding**: removed hardcoded `NITRO_PORT=3000` from the web Dockerfile. It was overriding Railway's injected `$PORT` (8080), so the container listened on the wrong port and deploys failed. Nitro now resolves `NITRO_PORT || PORT` correctly.
+- **Better Auth baseURL**: set the canonical base URL from `PUBLIC_SITE_URL` → `RAILWAY_PUBLIC_DOMAIN` → localhost. Fixes the "Base URL could not be determined" warning that breaks OAuth callbacks/redirects.
+- **SSR auth client baseURL**: mirrors the same resolution in the Vue auth client.
+
 ## [1.2.0] - 2026-08-12
 
 ### Added — Terminal Noir UI redesign
