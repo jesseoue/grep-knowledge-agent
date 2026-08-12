@@ -48,7 +48,16 @@ function resolveSecret(): string {
 function createAuth() {
   const db = getDb()
 
+  // Determine the canonical base URL so OAuth callbacks + redirects resolve
+  // correctly. Priority: PUBLIC_SITE_URL → Railway public domain → localhost.
+  const baseURL = (
+    process.env.PUBLIC_SITE_URL
+    || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '')
+    || 'http://localhost:3000'
+  ).replace(/\/$/, '')
+
   return betterAuth({
+    baseURL,
     database: drizzleAdapter(db, {
       provider: 'pg',
     }),

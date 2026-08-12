@@ -28,9 +28,12 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
-ENV PORT=3000
-ENV NITRO_PORT=3000
 ENV NITRO_HOST=0.0.0.0
+# IMPORTANT: do NOT set PORT or NITRO_PORT here. Railway injects $PORT
+# (default 8080) at runtime and routes traffic + healthchecks to it. Nitro
+# resolves the port via `NITRO_PORT || PORT`, so setting either hardcodes the
+# container to 3000 and breaks the deploy (healthcheck hits the wrong port).
+# Leaving them unset lets Nitro pick up Railway's injected $PORT automatically.
 
 # Copy only the production build output + migrations + node_modules
 COPY --from=base /app/apps/web/.output ./apps/web/.output
@@ -42,7 +45,8 @@ USER node
 
 EXPOSE 3000
 
-# Lightweight healthcheck using Node (no curl needed in slim image)
+# Lightweight healthcheck using Node (no curl needed in slim image).
+# Uses process.env.PORT (Railway-injected) or 3000 as a local fallback.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD ["node", "-e", "const r=require('http').request({host:'127.0.0.1',port:process.env.PORT||3000,path:'/api/health'},res=>process.exit(res.statusCode===200?0:1));r.on('error',()=>process.exit(1));r.end();"]
 
