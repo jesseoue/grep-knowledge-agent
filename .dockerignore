@@ -36,7 +36,6 @@ node_modules
 Thumbs.db
 
 # CI / meta
-railway-template-readme.md
 CHANGELOG.md
 CONTRIBUTING.md
 LICENSE

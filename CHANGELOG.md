@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2026-08-12
+
+### Added — SEO & polish
+- **SEO metadata**: title, meta description, keywords, robots, Open Graph, and Twitter cards via `useSeoMeta` in `app.vue` (single source of truth — no duplicate `<meta>` tags).
+- **Custom favicon** (`favicon.svg`) and **Open Graph image** (`og.png`, 1200×630) in the Terminal Noir aesthetic.
+- **`theme-color`** meta for mobile browser chrome.
+
+### Cleanup
+- Removed empty `server/middleware/` and `server/utils/` directories.
+- Removed stale `railway-template-readme.md` references from `.dockerignore` and `.gitignore`.
+- Consolidated duplicated SEO head config (was split across `app.vue` and `nuxt.config.ts`).
+- Confirmed no leaked API keys in source (full scan).
+
 ## [1.2.1] - 2026-08-12
 
 ### Fixed — production deploy
