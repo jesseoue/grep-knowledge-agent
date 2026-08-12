@@ -112,8 +112,23 @@ User message → POST /api/chats
               │    │                          → sandbox grep/find/cat
               │    ├─ onStepEnd: log per-step token usage
               │    └─ compose answer + citations
-              └─ response returned with file references + total usage
+              └─ response returns { text, references, trace, usage }
+                 - trace: every shell command the agent ran (drives the
+                   "command trace" sidebar in the UI — no black box)
+                 - references: files cited (file-name chips under the answer)
 ```
+
+## UI / frontend
+
+The frontend follows a **"Terminal Noir"** aesthetic — a CRT/command-line look that's
+honest to the product (filesystem + bash + LLM, no vector DB). Key pieces:
+
+- `app/config.ts` — Nuxt UI theme (primary = amber)
+- `app/assets/css/main.css` — Tailwind + Nuxt UI theme, JetBrains Mono, scanline/grid overlays
+- `app/components/ChatMessage.vue` — reusable chat bubble; renders assistant answers as markdown via `@nuxtjs/mdc`
+- `app/pages/index.vue` — chat UI with a collapsible "command trace" sidebar
+- `app/pages/login.vue` — split layout with an animated `grep` terminal hero
+- `app/pages/settings.vue` — source management + sync
 
 ## Why not a vector DB?
 

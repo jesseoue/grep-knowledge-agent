@@ -124,16 +124,19 @@ async function syncSnapshotRepo() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
-    <header class="border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-900">
+  <div class="min-h-screen bg-[#0a0a0b]">
+    <header class="border-b border-zinc-800 bg-[#0a0a0b]/80 px-5 py-3 backdrop-blur">
       <div class="mx-auto flex max-w-4xl items-center justify-between">
         <div class="flex items-center gap-3">
-          <UButton to="/" icon="i-lucide-arrow-left" color="neutral" variant="ghost" square />
-          <h1 class="text-lg font-semibold">Settings</h1>
+          <UButton to="/" icon="i-lucide-arrow-left" color="neutral" variant="ghost" square class="!text-zinc-400 hover:!text-zinc-100" />
+          <div>
+            <h1 class="text-sm font-bold tracking-tight text-zinc-100">sources &amp; sync</h1>
+            <p class="font-mono text-[10px] text-zinc-500">manage the filesystem the agent greps</p>
+          </div>
         </div>
         <div class="flex items-center gap-2">
           <UButton :loading="loading" icon="i-lucide-refresh-cw" color="primary" size="sm" @click="runSync">
-            Sync sources
+            sync all
           </UButton>
           <UButton
             v-if="session?.data"
@@ -141,71 +144,96 @@ async function syncSnapshotRepo() {
             color="neutral"
             variant="ghost"
             size="sm"
+            class="!text-zinc-500 hover:!text-red-400"
             @click="logout"
           >
-            Sign out
+            exit
           </UButton>
         </div>
       </div>
     </header>
 
-    <main class="mx-auto max-w-4xl px-6 py-8">
-      <UAlert v-if="error" type="error" :title="error" class="mb-6" />
-      <UAlert v-if="message" type="success" :title="message" class="mb-6" />
+    <main class="mx-auto max-w-4xl px-5 py-8">
+      <UAlert v-if="error" type="error" :title="error" class="mb-6" icon="i-lucide-triangle-alert" />
+      <UAlert v-if="message" type="success" :title="message" class="mb-6" icon="i-lucide-check-circle" />
 
-      <section class="mb-10">
-        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">Snapshot repository</h2>
-        <div class="rounded-2xl bg-white p-6 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-800">
-          <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            The snapshot repo is what the agent searches with <code>grep</code>. You can set it here or via the
-            <code class="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">SNAPSHOT_REPO</code> env var.
-          </p>
-          <div class="flex gap-3">
-            <UInput v-model="snapshotRepo" class="flex-1" placeholder="owner/repo (e.g. vercel-labs/knowledge-agent-template)" />
-            <UButton icon="i-lucide-git-branch" :loading="loading" @click="syncSnapshotRepo">Sync</UButton>
+      <!-- Snapshot repository -->
+      <section class="mb-8">
+        <h2 class="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-amber-400">❯ snapshot repository</h2>
+        <div class="terminal-window">
+          <div class="terminal-titlebar">
+            <span class="ml-1 font-mono text-[11px] text-zinc-500">~/snapshot</span>
+          </div>
+          <div class="p-5">
+            <p class="mb-4 font-mono text-[12px] text-zinc-400">
+              the repo the agent searches with <span class="text-cyan-300">grep</span>. set it here or via
+              <code class="rounded bg-zinc-800/80 px-1.5 py-0.5 text-amber-200">SNAPSHOT_REPO</code>.
+            </p>
+            <div class="flex gap-2">
+              <UInput v-model="snapshotRepo" class="flex-1" placeholder="owner/repo (e.g. vercel-labs/knowledge-agent-template)" />
+              <UButton icon="i-lucide-git-branch" :loading="loading" color="primary" @click="syncSnapshotRepo">sync</UButton>
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="mb-10">
-        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">Add GitHub source</h2>
-        <div class="rounded-2xl bg-white p-6 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-800">
-          <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <UFormField label="Label">
-              <UInput v-model="newSource.label" placeholder="e.g. Nuxt docs" />
-            </UFormField>
-            <UFormField label="Repository">
-              <UInput v-model="newSource.repo" placeholder="owner/repo" />
-            </UFormField>
-            <UFormField label="Branch">
-              <UInput v-model="newSource.branch" placeholder="main" />
-            </UFormField>
-            <UFormField label="Content path (optional)">
-              <UInput v-model="newSource.contentPath" placeholder="docs/" />
-            </UFormField>
+      <!-- Add GitHub source -->
+      <section class="mb-8">
+        <h2 class="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-amber-400">❯ add github source</h2>
+        <div class="terminal-window">
+          <div class="terminal-titlebar">
+            <span class="ml-1 font-mono text-[11px] text-zinc-500">$ add-source --type github</span>
           </div>
-          <UButton class="mt-4" icon="i-lucide-plus" color="primary" :loading="loading" @click="addSource">
-            Add source
-          </UButton>
+          <div class="p-5">
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <label class="mb-1.5 block font-mono text-[11px] text-zinc-500">label</label>
+                <UInput v-model="newSource.label" placeholder="e.g. Nuxt docs" />
+              </div>
+              <div>
+                <label class="mb-1.5 block font-mono text-[11px] text-zinc-500">repository</label>
+                <UInput v-model="newSource.repo" placeholder="owner/repo" />
+              </div>
+              <div>
+                <label class="mb-1.5 block font-mono text-[11px] text-zinc-500">branch</label>
+                <UInput v-model="newSource.branch" placeholder="main" />
+              </div>
+              <div>
+                <label class="mb-1.5 block font-mono text-[11px] text-zinc-500">content path (optional)</label>
+                <UInput v-model="newSource.contentPath" placeholder="docs/" />
+              </div>
+            </div>
+            <UButton class="mt-4" icon="i-lucide-plus" color="primary" :loading="loading" @click="addSource">
+              add source
+            </UButton>
+          </div>
         </div>
       </section>
 
+      <!-- Sources list -->
       <section>
-        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">Sources ({{ sources.length }})</h2>
-        <div v-if="sources.length === 0" class="rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center text-sm text-gray-500 dark:border-gray-800">
-          No sources yet — add a GitHub repo above or set <code>SNAPSHOT_REPO</code>.
+        <h2 class="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-amber-400">❯ sources ({{ sources.length }})</h2>
+        <div v-if="sources.length === 0" class="terminal-window">
+          <div class="p-8 text-center font-mono text-[12px] text-zinc-600">
+            <span class="text-zinc-500">$ ls ~/snapshot</span><br />
+            <span class="text-zinc-600">ls: no such directory</span><br /><br />
+            add a GitHub repo above or set <code class="rounded bg-zinc-800/80 px-1.5 py-0.5 text-amber-200">SNAPSHOT_REPO</code>
+          </div>
         </div>
         <div v-else class="space-y-2">
           <div
             v-for="s in sources"
             :key="s.id"
-            class="flex items-center justify-between rounded-2xl bg-white px-4 py-3 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-800"
+            class="flex items-center justify-between rounded-lg border border-zinc-800/70 bg-[#0d0d10] px-4 py-3"
           >
-            <div>
-              <p class="text-sm font-medium">{{ s.label }}</p>
-              <p class="text-xs text-gray-500">{{ s.repo }} · {{ s.branch }}</p>
+            <div class="flex items-center gap-3">
+              <span class="text-green-400">▸</span>
+              <div>
+                <p class="text-sm font-medium text-zinc-200">{{ s.label }}</p>
+                <p class="font-mono text-[11px] text-zinc-500">{{ s.repo }} · {{ s.branch }}</p>
+              </div>
             </div>
-            <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" size="sm" @click="removeSource(s.id)" />
+            <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" size="sm" class="!text-zinc-500 hover:!text-red-400" @click="removeSource(s.id)" />
           </div>
         </div>
       </section>

@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { authClient } from '~/lib/auth-client'
+
+interface ChatMsg {
+  role: 'user' | 'assistant'
+  content: string
+  references?: string[]
+  trace?: { cmd: string, tool: string }[]
+}
+interface Usage { inputTokens?: number, outputTokens?: number, totalTokens?: number }
 
 const message = ref('')
 const loading = ref(false)
-const messages = ref<Array<{ role: 'user' | 'assistant', content: string, references?: string[] }>>([])
-const sources = ref<{ total: number, github: { count: number }, youtube: { count: number }, file: { count: number }, snapshotRepo: string | null } | null>(null)
-
+const messages = ref<ChatMsg[]>([])
+const sources = ref<{ total: number, snapshotRepo: string | null } | null>(null)
 const chatScroll = ref<HTMLDivElement | null>(null)
+const showTrace = ref(false)
+const lastUsage = ref<Usage | null>(null)
 
 const session = authClient.useSession()
 
@@ -20,7 +29,8 @@ onMounted(async () => {
   try {
     const res = await fetch('/api/sources')
     if (res.ok) {
-      sources.value = await res.json()
+      const data = await res.json()
+      sources.value = { total: data.total || 0, snapshotRepo: data.snapshotRepo || null }
     }
   } catch {
     // sources unavailable — non-fatal
@@ -52,7 +62,9 @@ async function sendMessage() {
       role: 'assistant',
       content: data.text,
       references: data.references,
+      trace: data.trace,
     })
+    lastUsage.value = data.usage || null
   } catch (error) {
     messages.value.push({
       role: 'assistant',
@@ -60,98 +72,176 @@ async function sendMessage() {
     })
   } finally {
     loading.value = false
-    nextTick(() => {
-      chatScroll.value?.scrollTo({ top: chatScroll.value.scrollHeight, behavior: 'smooth' })
-    })
+    await nextTick()
+    chatScroll.value?.scrollTo({ top: chatScroll.value.scrollHeight, behavior: 'smooth' })
   }
 }
 </script>
 
 <template>
   <div class="flex h-screen flex-col">
-    <header class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+    <!-- Header -->
+    <header class="flex items-center justify-between border-b border-zinc-800 bg-[#0a0a0b]/80 px-5 py-3 backdrop-blur">
       <div class="flex items-center gap-3">
-        <UButton icon="i-lucide-search" color="primary" variant="soft" square />
+        <div class="flex h-8 w-8 items-center justify-center rounded-md border border-amber-400/30 bg-amber-400/10">
+          <span class="text-amber-400">❯</span>
+        </div>
         <div>
-          <h1 class="text-lg font-semibold">Grep Knowledge Agent</h1>
-          <p class="text-xs text-gray-500 dark:text-gray-400">
-            grep, not embeddings — no vector DB
-          </p>
+          <h1 class="text-sm font-bold tracking-tight text-zinc-100">grep-agent</h1>
+          <p class="font-mono text-[10px] text-zinc-500">filesystem + bash + llm · no vector db</p>
         </div>
       </div>
-      <div class="flex items-center gap-4">
-        <span v-if="sources" class="text-xs text-gray-500">
+      <div class="flex items-center gap-3">
+        <span v-if="sources" class="hidden items-center gap-1.5 font-mono text-[11px] text-zinc-500 sm:flex">
+          <span class="inline-block h-1.5 w-1.5 rounded-full bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.4)]" />
           {{ sources.total }} sources
-          <span v-if="sources.snapshotRepo" class="ml-1 font-mono">· {{ sources.snapshotRepo }}</span>
+          <span v-if="sources.snapshotRepo" class="text-zinc-600">· {{ sources.snapshotRepo }}</span>
         </span>
-        <UButton to="/settings" icon="i-lucide-settings" color="neutral" variant="ghost" size="sm">
-          Settings
+        <UButton
+          to="/settings"
+          icon="i-lucide-terminal-square"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          class="!text-zinc-400 hover:!text-zinc-100"
+        >
+          sources
         </UButton>
         <UButton
-          v-if="session?.data"
+          icon="i-lucide-file-search"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          class="!text-zinc-400 hover:!text-zinc-100"
+          @click="showTrace = !showTrace"
+        >
+          trace
+        </UButton>
+        <UButton
           icon="i-lucide-log-out"
           color="neutral"
           variant="ghost"
           size="sm"
+          class="!text-zinc-500 hover:!text-red-400"
           @click="logout"
         >
-          Sign out
+          exit
         </UButton>
       </div>
     </header>
 
-    <main ref="chatScroll" class="flex-1 overflow-y-auto px-6 py-8">
-      <div v-if="messages.length === 0" class="mx-auto max-w-2xl py-20 text-center">
-        <UButton icon="i-lucide-search" color="primary" variant="soft" size="xl" square />
-        <h2 class="mt-6 text-2xl font-bold">Ask your knowledge base</h2>
-        <p class="mt-2 text-gray-500 dark:text-gray-400">
-          The agent searches your sources with <code class="rounded bg-gray-100 px-1.5 py-0.5 text-sm dark:bg-gray-800">grep</code>,
-          <code class="rounded bg-gray-100 px-1.5 py-0.5 text-sm dark:bg-gray-800">find</code>, and
-          <code class="rounded bg-gray-100 px-1.5 py-0.5 text-sm dark:bg-gray-800">cat</code> — no embeddings, no chunking, no vector DB.
-        </p>
-      </div>
-
-      <div v-for="(msg, i) in messages" :key="i" class="mx-auto mb-6 max-w-2xl">
-        <div :class="msg.role === 'user' ? 'ml-auto max-w-[80%]' : 'mr-auto max-w-[85%]'">
-          <div
-            class="rounded-2xl px-4 py-3 text-sm leading-relaxed"
-            :class="msg.role === 'user'
-              ? 'bg-primary-500 text-white'
-              : 'bg-white ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-800'"
-          >
-            <pre class="whitespace-pre-wrap font-sans">{{ msg.content }}</pre>
+    <!-- Body -->
+    <div class="flex flex-1 overflow-hidden">
+      <!-- Chat area -->
+      <main ref="chatScroll" class="flex-1 overflow-y-auto px-4 py-6">
+        <div class="mx-auto flex max-w-2xl flex-col gap-5">
+          <!-- Empty state -->
+          <div v-if="messages.length === 0" class="rise mt-16 text-center">
+            <div class="mx-auto mb-6 inline-block">
+              <div class="terminal-window">
+                <div class="terminal-titlebar">
+                  <span class="terminal-dot bg-red-400/80" />
+                  <span class="terminal-dot bg-amber-400/80" />
+                  <span class="terminal-dot bg-green-400/80" />
+                  <span class="ml-3 font-mono text-[11px] text-zinc-500">zsh — 80×24</span>
+                </div>
+                <div class="px-6 py-5 text-left font-mono text-[12.5px] leading-relaxed">
+                  <p class="text-zinc-500"><span class="text-green-400">$</span> grep --help</p>
+                  <p class="mt-2 text-zinc-300">
+                    usage: <span class="text-amber-300">ask</span> the agent anything about your synced docs.
+                  </p>
+                  <p class="mt-1 text-zinc-500">the agent will <span class="text-cyan-300">grep</span>, <span class="text-cyan-300">find</span> &amp; <span class="text-cyan-300">cat</span> your files to answer.</p>
+                  <p class="mt-3 text-zinc-500">try:</p>
+                  <p class="mt-1 text-zinc-400">  ❯ "how do I configure rate limiting?"</p>
+                  <p class="text-zinc-400">  ❯ "what's in the architecture docs?"</p>
+                  <p class="text-zinc-400">  ❯ "explain the auth flow"</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div v-if="msg.references?.length" class="mt-2 flex flex-wrap gap-1.5">
-            <span
-              v-for="ref in msg.references"
-              :key="ref"
-              class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-            >
-              {{ ref }}
-            </span>
+
+          <!-- Messages -->
+          <ChatMessage
+            v-for="(msg, i) in messages"
+            :key="i"
+            :role="msg.role"
+            :content="msg.content"
+            :references="msg.references"
+          />
+
+          <!-- Loading indicator -->
+          <div v-if="loading" class="flex justify-start">
+            <div class="rounded-lg border border-zinc-800/70 bg-[#0d0d10] px-4 py-2.5">
+              <p class="font-mono text-[12px] text-zinc-500">
+                <span class="text-green-400">$</span> grep<span class="text-amber-400">.</span>running
+                <span class="cursor-blink inline-block h-3 w-2 align-middle text-amber-400">▊</span>
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
 
-      <div v-if="loading" class="mx-auto flex max-w-2xl items-center gap-2 text-sm text-gray-500">
-        <UIcon name="i-lucide-loader-2" class="animate-spin" />
-        Searching with grep…
-      </div>
-    </main>
+      <!-- Command trace sidebar -->
+      <aside
+        v-if="showTrace"
+        class="w-80 shrink-0 overflow-y-auto border-l border-zinc-800 bg-[#0a0a0b]/60 backdrop-blur"
+      >
+        <div class="border-b border-zinc-800 px-4 py-3">
+          <p class="font-mono text-[11px] font-semibold text-zinc-300">
+            <span class="text-amber-400">❯</span> command trace
+          </p>
+          <p class="mt-0.5 font-mono text-[10px] text-zinc-600">every shell command the agent ran</p>
+        </div>
+        <div class="space-y-3 p-4">
+          <template v-if="messages.some(m => m.trace?.length)">
+            <div
+              v-for="(msg, mi) in messages.filter(m => m.trace?.length)"
+              :key="mi"
+              class="space-y-1.5"
+            >
+              <p class="font-mono text-[10px] text-zinc-600"># step {{ mi + 1 }}</p>
+              <div
+                v-for="(t, ti) in msg.trace"
+                :key="ti"
+                class="trace-command rounded-md border border-zinc-800/70 bg-[#0d0d10] px-3 py-2"
+              >
+                <span class="text-green-400">$</span>
+                <span class="ml-1.5 text-cyan-300">{{ t.cmd }}</span>
+              </div>
+            </div>
+          </template>
+          <div v-else class="rounded-md border border-dashed border-zinc-800 p-4 text-center font-mono text-[11px] text-zinc-600">
+            no commands yet<br /><span class="text-[10px]">ask something to see the trace</span>
+          </div>
 
-    <footer class="border-t border-gray-200 px-6 py-4 dark:border-gray-800">
-      <div class="mx-auto flex max-w-2xl gap-3">
+          <!-- Usage footer -->
+          <div v-if="lastUsage" class="mt-4 border-t border-zinc-800 pt-3">
+            <p class="font-mono text-[10px] text-zinc-600">tokens used</p>
+            <p class="mt-1 font-mono text-[11px] text-zinc-400">
+              {{ lastUsage.totalTokens?.toLocaleString() || '—' }} total
+            </p>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Footer input -->
+    <footer class="border-t border-zinc-800 bg-[#0a0a0b]/80 px-4 py-3 backdrop-blur">
+      <div class="mx-auto flex max-w-2xl items-center gap-2">
+        <span class="font-mono text-amber-400">❯</span>
         <UInput
           v-model="message"
           class="flex-1"
           size="lg"
-          placeholder="Ask about your docs, e.g. “How do I configure rate limiting?”"
+          variant="none"
+          placeholder="ask about your docs…"
           @keyup.enter="sendMessage"
         />
         <UButton
-          icon="i-lucide-send"
+          icon="i-lucide-arrow-right"
           color="primary"
           size="lg"
+          square
           :loading="loading"
           @click="sendMessage"
         />

@@ -157,7 +157,23 @@ export default defineEventHandler(async (event) => {
       })
     )).slice(0, 8)
 
-    return { text, references, usage: usage ? { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, totalTokens: usage.totalTokens } : undefined }
+    // Extract the command trace — every shell command the agent ran.
+    // Powers the "command trace" panel in the UI (no black box).
+    const trace = (steps || []).flatMap((s: any) => {
+      const toolCalls = s.toolCalls || []
+      return toolCalls.flatMap((tc: any) => {
+        const args = tc.args as any
+        const commands = args?.commands || (args?.command ? [args.command] : [])
+        return commands.map((cmd: string) => ({ cmd, tool: tc.toolName || 'bash' }))
+      })
+    })
+
+    return {
+      text,
+      references,
+      trace,
+      usage: usage ? { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, totalTokens: usage.totalTokens } : undefined,
+    }
   } catch (error: any) {
     // Don't log abort errors — they're expected when users disconnect
     if (error?.name === 'AbortError') {

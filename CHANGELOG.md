@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-08-12
+
+### Added — Terminal Noir UI redesign
+- **Distinctive "Terminal Noir" aesthetic**: deep ink-black theme with CRT scanline overlay, ambient glow, and grid backdrop — honest to the grep/bash product (no more generic gray/white "AI slop").
+- **JetBrains Mono** loaded via Google Fonts, replacing the generic Inter/system font.
+- **Terminal-window chrome** (title bar, traffic-light dots, `$` prompt) across all pages.
+- **Blinking cursor**, staggered `.rise` reveals, and typing effects.
+- **Login page**: cinematic two-column layout with an animated `grep` terminal hero showing live search results.
+- **Chat page**: markdown-rendered assistant answers via `@nuxtjs/mdc` (previously raw `<pre>` text), plus file-reference chips.
+- **Command trace sidebar**: real-time panel showing every `grep`/`cat` command the agent ran — matching the original Vercel template's tool-visualization feature.
+- **Empty-state terminal**: `zsh — 80×24` window that invites the first question.
+
+### Changed
+- `chats.post.ts` now returns a `trace` array (the shell commands the agent ran) alongside `references` and `usage`.
+- Added reusable `ChatMessage.vue` component (DRY).
+- `app.config.ts` sets primary color to amber for a cohesive warm terminal accent.
+
 ## [1.1.1] - 2026-08-12
 
 ### Fixed

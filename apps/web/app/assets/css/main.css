@@ -1,10 +1,141 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
+/* ────────────────────────────────────────────────────────────
+   GREP KNOWLEDGE AGENT — Terminal Noir
+   A CRT / command-line aesthetic, honest to the product:
+   this agent is a filesystem + bash + LLM, no vector DB.
+   ──────────────────────────────────────────────────────────── */
+
 html {
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  scroll-behavior: smooth;
 }
 
 body {
-  @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
+  @apply bg-[#0a0a0b] text-zinc-200 antialiased;
+  background-image:
+    radial-gradient(1200px 600px at 20% -10%, rgba(245, 158, 11, 0.07), transparent 60%),
+    radial-gradient(1000px 500px at 90% 110%, rgba(34, 211, 238, 0.05), transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.014) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+  background-attachment: fixed;
 }
+
+/* Faint CRT scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 3px,
+    rgba(0, 0, 0, 0.06) 4px
+  );
+  opacity: 0.35;
+}
+
+/* Blinking terminal cursor */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.cursor-blink {
+  animation: blink 1.1s step-end infinite;
+}
+
+/* Typing reveal for the hero terminal lines */
+@keyframes typing {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+/* Fade + rise staggered reveal */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise {
+  animation: rise 0.5s ease-out both;
+}
+
+/* Terminal window chrome */
+.terminal-window {
+  @apply rounded-xl border border-zinc-800 bg-[#0d0d10] shadow-2xl shadow-black/60;
+  overflow: hidden;
+}
+.terminal-titlebar {
+  @apply flex items-center gap-2 border-b border-zinc-800 bg-zinc-900/80 px-4 py-2.5;
+}
+.terminal-dot {
+  @apply h-2.5 w-2.5 rounded-full;
+}
+
+/* Prompt line — user message */
+.prompt-line::before {
+  content: '❯ ';
+  @apply text-amber-400 font-bold;
+}
+
+/* Command trace entries */
+.trace-command {
+  @apply font-mono text-[11px] leading-relaxed;
+}
+.trace-command .cmd {
+  @apply text-cyan-300;
+}
+.trace-command .dir {
+  @apply text-zinc-600;
+}
+
+/* Grep highlight for searched terms */
+.grep-hit {
+  @apply rounded bg-amber-400/20 px-1 text-amber-300;
+}
+
+/* Code / markdown within chat answers */
+.mdc-prose code {
+  @apply rounded bg-zinc-800/80 px-1.5 py-0.5 font-mono text-[12.5px] text-amber-200;
+}
+.mdc-prose pre {
+  @apply overflow-x-auto rounded-lg border border-zinc-800 bg-[#0a0a0b] p-4 text-[12.5px] leading-relaxed;
+}
+.mdc-prose pre code {
+  @apply bg-transparent p-0 text-zinc-200;
+}
+.mdc-prose h1, .mdc-prose h2, .mdc-prose h3 {
+  @apply mb-2 mt-5 font-bold text-zinc-100 first:mt-0;
+}
+.mdc-prose h1 { @apply text-xl; }
+.mdc-prose h2 { @apply text-lg; }
+.mdc-prose h3 { @apply text-base; }
+.mdc-prose p { @apply mb-3 leading-relaxed; }
+.mdc-prose ul { @apply mb-3 list-disc space-y-1 pl-5; }
+.mdc-prose ol { @apply mb-3 list-decimal space-y-1 pl-5; }
+.mdc-prose a { @apply text-cyan-400 underline underline-offset-2 hover:text-cyan-300; }
+.mdc-prose strong { @apply text-zinc-100 font-semibold; }
+.mdc-prose blockquote {
+  @apply mb-3 border-l-2 border-amber-500/60 pl-3 text-zinc-400;
+}
+.mdc-prose table {
+  @apply mb-3 w-full border-collapse text-[12.5px];
+}
+.mdc-prose th, .mdc-prose td {
+  @apply border border-zinc-800 px-2.5 py-1.5 text-left;
+}
+.mdc-prose th { @apply bg-zinc-900 text-zinc-100; }
+
+/* Selection color to match theme */
+::selection {
+  @apply bg-amber-400/30 text-amber-100;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0a0a0b; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
