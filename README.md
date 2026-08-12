@@ -141,7 +141,7 @@ bun run dev
 
 | Variable | Required | Description |
 |---|---|---|
-| `BETTER_AUTH_SECRET` | ✅ (auto-generated on Railway) | Session signing secret |
+| `BETTER_AUTH_SECRET` | ✅ (auto-generated on Railway) | Session signing secret. Auto-generates a runtime fallback if unset (sessions reset on redeploy). |
 | `DATABASE_URL` | ✅ (Railway Postgres) | Postgres connection string |
 | `REDIS_URL` | ✅ (Railway Redis) | Redis for sessions/rate limits/jobs |
 | `GITHUB_CLIENT_ID` | ✅ | GitHub OAuth app client ID |
@@ -150,7 +150,7 @@ bun run dev
 | `ANTHROPIC_API_KEY` | ✅ (one of three) | Anthropic API key |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ (one of three) | Google Gemini API key |
 | `SNAPSHOT_REPO` | optional | Default `owner/repo` to seed on first run |
-| `PUBLIC_SITE_URL` | optional | Your public app URL (for auth) |
+| `PUBLIC_SITE_URL` | optional | Your public app URL (for auth). Auto-detected from Railway on deploy. |
 
 See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for where to find each value.
 

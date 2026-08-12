@@ -96,6 +96,31 @@ async function runSync() {
     loading.value = false
   }
 }
+
+async function syncSnapshotRepo() {
+  error.value = ''
+  message.value = ''
+  const repo = snapshotRepo.value.trim()
+  if (!repo) {
+    error.value = 'Enter an owner/repo to sync (e.g. vercel-labs/knowledge-agent-template)'
+    return
+  }
+  loading.value = true
+  try {
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repo, branch: snapshotBranch.value }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.message || 'Sync failed')
+    message.value = `Synced ${repo}`
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Sync failed'
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <template>
@@ -137,7 +162,7 @@ async function runSync() {
           </p>
           <div class="flex gap-3">
             <UInput v-model="snapshotRepo" class="flex-1" placeholder="owner/repo (e.g. vercel-labs/knowledge-agent-template)" />
-            <UButton icon="i-lucide-git-branch" :loading="loading" @click="runSync">Sync</UButton>
+            <UButton icon="i-lucide-git-branch" :loading="loading" @click="syncSnapshotRepo">Sync</UButton>
           </div>
         </div>
       </section>

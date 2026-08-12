@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-08-12
+
+### Fixed
+- **Security**: removed hardcoded `'dev-secret-change-me'` fallback in `auth.ts`. The app now auto-generates an ephemeral runtime secret (with a warning) if `BETTER_AUTH_SECRET` is unset — no known-secret vulnerability.
+- **One-click OAuth**: `trustedOrigins` now auto-includes `RAILWAY_PUBLIC_DOMAIN` and `RAILWAY_STATIC_URL`, so GitHub OAuth callbacks work out-of-the-box on `*.up.railway.app` without setting `PUBLIC_SITE_URL`.
+- **Settings page**: the "Snapshot repository" field is now wired up — typing an `owner/repo` and clicking Sync actually clones it (previously a dead input).
+
+### Changed
+- `sync.post.ts` now accepts a `repo`/`branch` in the body to sync a raw repo without a DB source record.
+- `docs/ENVIRONMENT.md` and `README.md` updated to document auto-generated secret + trusted origins auto-detection.
+
 ## [1.1.0] - 2026-08-12
 
 ### Added

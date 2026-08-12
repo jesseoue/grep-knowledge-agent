@@ -6,7 +6,7 @@ All configuration is done via environment variables. On Railway these are set pe
 
 | Variable | Example | Description |
 |---|---|---|
-| `BETTER_AUTH_SECRET` | `openssl rand -hex 32` | Session signing secret. **Never commit a real value.** On Railway, use `${{secret()}}` to auto-generate. |
+| `BETTER_AUTH_SECRET` | `openssl rand -hex 32` | Session signing secret. **Never commit a real value.** On Railway, use `${{secret()}}` to auto-generate. If unset, the app generates an ephemeral runtime secret (sessions reset on redeploy). |
 | `DATABASE_URL` | `postgresql://...` | PostgreSQL connection string (provided by Railway Postgres plugin). |
 | `REDIS_URL` | `redis://default:...` | Redis connection string (provided by Railway Redis plugin). |
 | `GITHUB_CLIENT_ID` | `Iv1.abc123` | GitHub OAuth app client ID. |
@@ -82,6 +82,8 @@ The template uses GitHub OAuth for authentication (Better Auth). You need a GitH
 5. Click **Generate a new client secret** → copy it → set as `GITHUB_CLIENT_SECRET`.
 
 > For local development, use `http://localhost:3000` as the Homepage and Callback URL.
+
+> **Trusted origins are auto-detected.** The app automatically trusts your Railway public domain (`RAILWAY_PUBLIC_DOMAIN`) and static URL (`RAILWAY_STATIC_URL`), plus `http://localhost:3000`. You only need to set `PUBLIC_SITE_URL` if you use a custom domain that isn't auto-detected.
 
 ---
 

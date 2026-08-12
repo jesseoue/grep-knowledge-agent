@@ -4,11 +4,14 @@ import { requireUserSession } from '../lib/session'
 
 const syncBodySchema = z.object({
   sources: z.array(z.string()).optional(),
+  repo: z.string().optional(),
+  branch: z.string().optional(),
+  contentPath: z.string().optional(),
 })
 
 export default defineEventHandler(async (event) => {
   await requireUserSession(event)
-  const body = await readValidatedBody(event, syncBodySchema.parse).catch(() => ({ sources: undefined }))
+  const body = await readValidatedBody(event, syncBodySchema.parse).catch((): z.infer<typeof syncBodySchema> => ({}))
 
   const db = getDb()
   let allSources: typeof schema.sources.$inferSelect[]
@@ -22,6 +25,26 @@ export default defineEventHandler(async (event) => {
     ? allSources.filter(s => body.sources!.includes(s.id))
     : allSources
 
+  // If a raw repo was supplied (from the "Snapshot repository" field),
+  // sync it directly without needing a DB source record.
+  if (body?.repo && !sources.length) {
+    const repo = body.repo.trim()
+    try {
+      await syncRepoToSandbox(repo, body.branch || 'main', body.contentPath || undefined)
+      return {
+        success: true,
+        summary: { total: 1, synced: 1, failed: 0 },
+        results: [{ sourceId: null, label: repo, success: true }],
+      }
+    } catch (error) {
+      return {
+        success: false,
+        summary: { total: 1, synced: 0, failed: 1 },
+        results: [{ sourceId: null, label: repo, success: false, error: error instanceof Error ? error.message : String(error) }],
+      }
+    }
+  }
+
   if (sources.length === 0) {
     // Nothing to sync — still ensure the default snapshot repo exists
     const snapshotRepo = process.env.SNAPSHOT_REPO
@@ -32,7 +55,12 @@ export default defineEventHandler(async (event) => {
         data: { why: 'Add a source first, or set SNAPSHOT_REPO', fix: 'Add a GitHub source in the settings page' },
       })
     }
-    return { success: true, summary: { total: 0, synced: 0, failed: 0 }, message: 'No sources configured. Set SNAPSHOT_REPO to clone a repo.' }
+    try {
+      await syncRepoToSandbox(snapshotRepo, process.env.SNAPSHOT_BRANCH || 'main')
+      return { success: true, summary: { total: 1, synced: 1, failed: 0 }, results: [{ sourceId: null, label: snapshotRepo, success: true }] }
+    } catch (error) {
+      return { success: false, summary: { total: 1, synced: 0, failed: 1 }, results: [{ sourceId: null, label: snapshotRepo, success: false, error: error instanceof Error ? error.message : String(error) }] }
+    }
   }
 
   const results = []
