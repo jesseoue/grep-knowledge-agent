@@ -1,10 +1,8 @@
-# Grep Knowledge Agent
-
-**Deploy and Host a Grep-Based Knowledge Agent with Railway**
+# Deploy and Host a Grep-Based Knowledge Agent with Railway
 
 A self-hosted AI knowledge agent that replaces vector embeddings with `grep`, `find`, and `cat`. Give the LLM a filesystem and `bash` — it searches your docs deterministically, explains every step, and costs ~75% less than vector RAG. No vector database, no Vercel lock-in.
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template?ref=https://github.com/jesseoue/grep-knowledge-agent)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/grep-knowledge-agent?utm_medium=integration&utm_source=button&utm_campaign=grep-knowledge-agent)
 
 ```
 ┌─────────────┐   ┌──────────────────────────────────────────┐   ┌──────────────┐
@@ -27,7 +25,7 @@ The agent clones your GitHub repos into a snapshot volume, then uses a sandboxed
 - **Internal knowledge base** — sync multiple repos and search across all of them with one query
 - **Self-hosted alternative** to Vercel's knowledge-agent-template — no vendor lock-in, bring your own AI keys
 
-## Dependencies
+## Dependencies for Grep Knowledge Agent Hosting
 
 ### Deployment Dependencies
 
