@@ -1,0 +1,61 @@
+# docker-compose.yml — local development with Postgres + Redis + Sandbox
+# Usage:
+#   docker compose up -d postgres redis sandbox
+#   bun run db:push
+#   bun run dev
+#
+# Then set in apps/web/.env:
+#   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/railway
+#   REDIS_URL=redis://localhost:6379
+#   SANDBOX_URL=http://localhost:3200
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: railway
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  sandbox:
+    build:
+      context: .
+      dockerfile: sandbox-service/Dockerfile
+    ports:
+      - "3200:3200"
+    volumes:
+      - snapshot:/snapshot
+    environment:
+      - PORT=3200
+      - SNAPSHOT_DIR=/snapshot
+    healthcheck:
+      test: ["CMD", "node", "-e", "const r=require('http').request({host:'127.0.0.1',port:3200,path:'/health'},res=>process.exit(res.statusCode===200?0:1));r.on('error',()=>process.exit(1));r.end();"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  pgdata:
+  redisdata:
+  snapshot:

@@ -112,10 +112,27 @@ The template provisions everything:
 
 ### Local Development
 
+**Option A: Docker Compose (recommended)**
+
+```bash
+# Start Postgres, Redis, and the sandbox service
+docker compose up -d
+
+bun install
+cp apps/web/.env.example apps/web/.env
+# Edit .env: set DATABASE_URL, REDIS_URL, SANDBOX_URL (see comments in .env.example)
+# Fill in at least one AI provider key + GitHub OAuth credentials
+bun run db:push    # create tables
+bun run dev
+```
+
+**Option B: Manual**
+
 ```bash
 bun install
 cp apps/web/.env.example apps/web/.env
 # Fill in at least one AI provider key + GitHub OAuth credentials
+# You'll need Postgres and Redis running locally
 bun run db:push    # create tables
 bun run dev
 ```

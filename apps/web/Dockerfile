@@ -1,4 +1,7 @@
 # Grep Knowledge Agent — web service
+# Multi-stage build: install deps → build Nuxt → slim runtime
+
+# ── Builder ──────────────────────────────────────────────────────────────────
 FROM node:24-slim AS base
 RUN npm install -g bun@1.3.14
 WORKDIR /app
@@ -19,18 +22,28 @@ COPY . .
 # Build the Nuxt app (outputs to apps/web/.output)
 RUN cd apps/web && bun run build
 
-# Production image — minimal runtime
+# ── Runtime ──────────────────────────────────────────────────────────────────
 FROM node:24-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
+ENV NITRO_PORT=3000
+ENV NITRO_HOST=0.0.0.0
 
+# Copy only the production build output + migrations + node_modules
 COPY --from=base /app/apps/web/.output ./apps/web/.output
 COPY --from=base /app/apps/web/server/db/migrations ./apps/web/server/db/migrations
 COPY --from=base /app/node_modules ./node_modules
 
+# Run as non-root user for security (node image provides the "node" user)
+USER node
+
 EXPOSE 3000
+
+# Lightweight healthcheck using Node (no curl needed in slim image)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD ["node", "-e", "const r=require('http').request({host:'127.0.0.1',port:process.env.PORT||3000,path:'/api/health'},res=>process.exit(res.statusCode===200?0:1));r.on('error',()=>process.exit(1));r.end();"]
 
 CMD ["node", "apps/web/.output/server/index.mjs"]

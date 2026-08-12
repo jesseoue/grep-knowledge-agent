@@ -39,6 +39,22 @@ bun run build
 bun run start
 ```
 
+## Docker
+
+```bash
+# Build and run the web service
+docker build -f apps/web/Dockerfile -t grep-agent-web .
+docker run -p 3000:3000 \
+  -e DATABASE_URL=... \
+  -e REDIS_URL=... \
+  -e OPENAI_API_KEY=... \
+  grep-agent-web
+
+# Build and run the sandbox service
+docker build -f sandbox-service/Dockerfile -t grep-agent-sandbox .
+docker run -p 3200:3200 -v /tmp/snapshot:/snapshot grep-agent-sandbox
+```
+
 ## Railway config
 
 - `railway.json` / `railway.toml` — root config-as-code: Nixpacks build, healthcheck at `/api/health`, restart-on-failure.

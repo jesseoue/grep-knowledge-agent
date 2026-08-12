@@ -1,0 +1,42 @@
+# Build context exclusions — keeps Docker builds fast and images lean
+# (Railway template best practice: "Dry Code" — only essential files)
+
+# Version control
+.git
+.gitignore
+.github
+
+# Docs (not needed in the image — Railway template README is separate)
+docs/
+*.md
+!apps/web/server/db/migrations/README.md
+
+# Reference / source clones
+source-ref/
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+apps/web/.nuxt
+apps/web/.output
+apps/web/dist
+packages/*/dist
+sandbox-service/dist
+
+# Node (bun handles deps in the image)
+node_modules
+
+# IDE / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# CI / meta
+railway-template-readme.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE

@@ -103,13 +103,16 @@ User clicks "Sync"             →  POST /api/sync
 
 ```
 User message → POST /api/chats
+              ├─ rate limit check (Redis or in-memory, 20 req/min per user)
               ├─ router model classifies complexity (4/8/15/25 steps)
               ├─ main model instantiated (provider from env keys)
               ├─ generateText with bash tools:
+              │    ├─ abortSignal: req.signal (stops on disconnect)
               │    ├─ bash / bash_batch tool → POST /api/sandbox/shell
               │    │                          → sandbox grep/find/cat
+              │    ├─ onStepEnd: log per-step token usage
               │    └─ compose answer + citations
-              └─ response returned with file references
+              └─ response returned with file references + total usage
 ```
 
 ## Why not a vector DB?

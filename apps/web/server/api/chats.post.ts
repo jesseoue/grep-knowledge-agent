@@ -13,9 +13,65 @@ const bodySchema = z.object({
   })),
 })
 
+// Rate limiter — uses Redis when available (works across replicas),
+// falls back to in-memory for local dev.
+const RATE_LIMIT_WINDOW_S = 60
+const RATE_LIMIT_MAX_REQUESTS = 20
+const rateLimitMap = new Map<string, { count: number, resetAt: number }>()
+
+async function checkRateLimit(userId: string): Promise<{ ok: boolean, retryAfter?: number }> {
+  // Try Redis first (works across multiple replicas in production)
+  try {
+    const { kvIncr } = await import('../lib/redis')
+    const count = await kvIncr(`ratelimit:${userId}`, RATE_LIMIT_WINDOW_S)
+    if (count > RATE_LIMIT_MAX_REQUESTS) {
+      return { ok: false, retryAfter: RATE_LIMIT_WINDOW_S }
+    }
+    return { ok: true }
+  } catch {
+    // Fallback: in-memory rate limiter (single replica / local dev)
+    const now = Date.now()
+    const entry = rateLimitMap.get(userId)
+
+    if (!entry || now > entry.resetAt) {
+      rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_S * 1000 })
+      return { ok: true }
+    }
+
+    if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
+      return { ok: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) }
+    }
+
+    entry.count++
+    return { ok: true }
+  }
+}
+
+// Clean up expired in-memory rate limit entries periodically
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, entry] of rateLimitMap) {
+    if (now > entry.resetAt) rateLimitMap.delete(key)
+  }
+}, 60_000).unref?.()
+
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
   const body = await readValidatedBody(event, bodySchema.parse)
+
+  // Rate limit — 20 requests per minute per user
+  const rateLimit = await checkRateLimit(session.user.id)
+  if (!rateLimit.ok) {
+    setHeader(event, 'retry-after', rateLimit.retryAfter || 60)
+    throw createError({
+      statusCode: 429,
+      statusMessage: 'Too many requests',
+      data: {
+        why: `Rate limit: ${RATE_LIMIT_MAX_REQUESTS} requests per minute`,
+        fix: `Wait ${rateLimit.retryAfter || 60}s and try again.`,
+      },
+    })
+  }
 
   if (!hasAIProvider()) {
     throw createError({
@@ -55,7 +111,7 @@ export default defineEventHandler(async (event) => {
   ].join('\n')
 
   try {
-    const { text, steps } = await generateText({
+    const { text, steps, usage, finishReason } = await generateText({
       model: mainModel,
       system: buildChatSystemPrompt({
         ...agentConfig,
@@ -68,7 +124,24 @@ export default defineEventHandler(async (event) => {
       },
       stopWhen: stepCountIs(routerConfig.maxSteps),
       temperature: agentConfig.temperature ?? 0.7,
+      // Propagate the request abort signal so disconnecting stops the model
+      // from generating (and billing) in the background.
+      abortSignal: AbortSignal.timeout(120_000), // 2 min cap
     })
+
+    // Log total usage for cost attribution
+    if (usage) {
+      console.log('[chat] total usage', {
+        userId: session.user.id,
+        model: routerConfig.model,
+        complexity: routerConfig.complexity,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        totalTokens: usage.totalTokens,
+        steps: steps?.length || 0,
+        finishReason,
+      })
+    }
 
     const references = Array.from(new Set(
       (steps || []).flatMap((s: any) => {
@@ -84,8 +157,15 @@ export default defineEventHandler(async (event) => {
       })
     )).slice(0, 8)
 
-    return { text, references }
-  } catch (error) {
+    return { text, references, usage: usage ? { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, totalTokens: usage.totalTokens } : undefined }
+  } catch (error: any) {
+    // Don't log abort errors — they're expected when users disconnect
+    if (error?.name === 'AbortError') {
+      throw createError({
+        statusCode: 499,
+        statusMessage: 'Request cancelled',
+      })
+    }
     console.error('[chat]', error)
     throw createError({
       statusCode: 502,
