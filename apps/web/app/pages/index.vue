@@ -143,8 +143,11 @@ async function sendMessage() {
           await nextTick()
           chatScroll.value?.scrollTo({ top: chatScroll.value.scrollHeight, behavior: 'smooth' })
         } else if (data.type === 'done') {
-          // Replace with the final assembled text + metadata
-          assistantMsg.value.content = data.text || assistantMsg.value.content
+          // Only update metadata; the text was already streamed token-by-token.
+          // If content is empty (e.g. tool-only response), use the final text.
+          if (!assistantMsg.value.content && data.text) {
+            assistantMsg.value.content = data.text
+          }
           assistantMsg.value.references = data.references
           assistantMsg.value.trace = data.trace
           lastUsage.value = data.usage || null
@@ -315,8 +318,8 @@ async function sendMessage() {
             </div>
           </div>
 
-          <!-- Loading indicator -->
-          <div v-if="loading" class="flex justify-start">
+          <!-- Loading indicator (only shows before the first token arrives) -->
+          <div v-if="loading && !messages.some(m => m.role === 'assistant' && m.content)" class="flex justify-start">
             <div class="rounded-lg border border-zinc-800/70 bg-[#0d0d10] px-4 py-2.5">
               <p class="font-mono text-[12px] text-zinc-500">
                 <span class="text-green-400">$</span> grep<span class="text-amber-400">.</span>running

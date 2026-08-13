@@ -20,16 +20,12 @@ defineProps<{
 
       <!-- Assistant: markdown-rendered answer -->
       <div v-else class="min-w-0">
-        <div class="mdc-prose rounded-lg border border-zinc-800/70 bg-[#0d0d10] px-5 py-4 text-[13px] leading-relaxed text-zinc-300">
+        <div v-if="content" class="mdc-prose rounded-lg border border-zinc-800/70 bg-[#0d0d10] px-5 py-4 text-[13px] leading-relaxed text-zinc-300">
           <MDC
-            v-if="content"
             :value="content"
             :data="{ theme: 'terminal' }"
             tag="div"
           />
-          <span v-else class="flex items-center gap-1 text-zinc-500">
-            <span class="cursor-blink inline-block h-3.5 w-2 bg-amber-400/80" />
-          </span>
         </div>
 
         <!-- References -->
