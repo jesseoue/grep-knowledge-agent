@@ -14,6 +14,7 @@ The template provisions:
 ### After deploy
 
 1. Set an AI provider key — at least one of:
+   - `OPENROUTER_API_KEY` → <https://openrouter.ai/settings/keys> — **recommended** (one key, every model)
    - `OPENAI_API_KEY` → <https://platform.openai.com/api-keys>
    - `ANTHROPIC_API_KEY` → <https://console.anthropic.com/settings/keys>
    - `GOOGLE_GENERATIVE_AI_API_KEY` → <https://aistudio.google.com/apikey>
@@ -47,7 +48,7 @@ docker build -f apps/web/Dockerfile -t grep-agent-web .
 docker run -p 3000:3000 \
   -e DATABASE_URL=... \
   -e REDIS_URL=... \
-  -e OPENAI_API_KEY=... \
+  -e OPENROUTER_API_KEY=... \
   grep-agent-web
 
 # Build and run the sandbox service

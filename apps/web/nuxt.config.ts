@@ -36,6 +36,7 @@ export default defineNuxtConfig({
     snapshotBranch: 'main',
     sandboxUrl: 'http://sandbox.railway.internal:3200',
     // AI provider keys (bring-your-own-key — at least one required)
+    openrouterApiKey: '',
     openaiApiKey: '',
     anthropicApiKey: '',
     googleApiKey: '',

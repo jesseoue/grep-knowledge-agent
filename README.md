@@ -38,7 +38,7 @@ The agent clones your GitHub repos into a snapshot volume, then uses a sandboxed
 ### Deployment Dependencies
 
 - [Railway](https://railway.com) — hosts the web app, sandbox service, Postgres, and Redis
-- [OpenAI](https://platform.openai.com/api-keys) / [Anthropic](https://console.anthropic.com/settings/keys) / [Google Gemini](https://aistudio.google.com/apikey) — at least one AI provider key (bring your own)
+- [OpenRouter](https://openrouter.ai/settings/keys) (recommended) / [OpenAI](https://platform.openai.com/api-keys) / [Anthropic](https://console.anthropic.com/settings/keys) / [Google Gemini](https://aistudio.google.com/apikey) — at least one AI provider key (bring your own)
 - [GitHub OAuth App](https://github.com/settings/developers) — for user authentication
 
 ### Implementation Details
@@ -48,7 +48,7 @@ The agent clones your GitHub repos into a snapshot volume, then uses a sandboxed
 | Vercel Sandbox | gVisor sandbox (sidecar service with read-only grep/cat/find) |
 | Vercel Blob | Railway Volume (snapshot directory) |
 | NuxtHub KV | Redis (sessions, rate limits) |
-| Vercel AI Gateway | Bring-your-own-key — OpenAI, Anthropic, or Google Gemini |
+| Vercel AI Gateway | Bring-your-own-key — OpenRouter, OpenAI, Anthropic, or Google Gemini |
 | Vercel Cron | Railway Cron (snapshot refresh) |
 | Vercel Workflow | Node + Redis job runner |
 
@@ -61,7 +61,7 @@ Railway is a singular platform to deploy your infrastructure stack. Railway will
 ## ✨ Features
 
 - **No embeddings. No chunking. No vector DB.** A filesystem, `bash`, and an LLM.
-- **Provider-agnostic complexity router** — classifies each question and routes to the cheapest model tier from *whatever provider you configured* (any single key works): trivial → `claude-haiku-4-5`/`gpt-4o-mini`, moderate → `claude-sonnet-4-6`/`gpt-4o`, complex → `claude-opus-4-8`.
+- **Provider-agnostic complexity router** — classifies each question and routes to the cheapest model tier from *whatever provider you configured* (any single key works). **OpenRouter preferred** — one key unlocks every vendor's models: trivial → `openai/gpt-5.4-mini`/`claude-haiku-4-5`, moderate → `openai/gpt-5.4`/`claude-sonnet-4-6`, complex → `openai/gpt-5.4-pro`/`claude-opus-4-8`.
 - **Deterministic, explainable retrieval** — every answer cites the files it read, and the full command trace is in the UI.
 - **GitHub sources** — point it at any public repo and it clones the docs into a searchable snapshot.
 - **Bring-your-own-key** — no AI gateway lock-in. Use OpenAI, Anthropic, Google Gemini, or all three.
@@ -103,6 +103,7 @@ The template provisions everything: **web service** (Nuxt 4 + Nitro, auto-genera
 **PostgreSQL** (`DATABASE_URL`), and **Redis** (`REDIS_URL`).
 
 1. **Set one AI provider key** (bring your own — any one works):
+   - `OPENROUTER_API_KEY` → [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) — **recommended** (one key, every model)
    - `OPENAI_API_KEY` → [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
    - `ANTHROPIC_API_KEY` → [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
    - `GOOGLE_GENERATIVE_AI_API_KEY` → [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
@@ -150,9 +151,10 @@ bun run dev
 | `BETTER_AUTH_SECRET` | ✅ (auto-generated on Railway) | Session signing secret. Auto-generates a runtime fallback if unset (sessions reset on redeploy). |
 | `DATABASE_URL` | ✅ (Railway Postgres) | Postgres connection string |
 | `REDIS_URL` | ✅ (Railway Redis) | Redis for sessions/rate limits/jobs |
-| `OPENAI_API_KEY` | ✅ (one of three) | OpenAI API key |
-| `ANTHROPIC_API_KEY` | ✅ (one of three) | Anthropic API key |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ (one of three) | Google Gemini API key |
+| `OPENROUTER_API_KEY` | ✅ (one of four, recommended) | OpenRouter key — one key unlocks every model |
+| `OPENAI_API_KEY` | ✅ (one of four) | OpenAI API key |
+| `ANTHROPIC_API_KEY` | ✅ (one of four) | Anthropic API key |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ (one of four) | Google Gemini API key |
 | `GITHUB_CLIENT_ID` | optional | GitHub OAuth client ID (enables "Continue with GitHub" on login) |
 | `GITHUB_CLIENT_SECRET` | optional | GitHub OAuth client secret |
 | `SNAPSHOT_REPO` | optional | Default `owner/repo` to seed on first run |
@@ -173,14 +175,15 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the deep dive.
 
 ### Complexity Router
 
-The router classifies each question and selects the optimal model tier + step budget. The actual model comes from whichever provider you configured (bring-your-own-key — any single key works):
+The router classifies each question and selects the optimal model tier + step budget. The actual model comes from whichever provider you configured (bring-your-own-key — any single key works). **OpenRouter is preferred** — one key unlocks every vendor's models:
 
-| Complexity | Model (Anthropic / OpenAI / Gemini) | Max Steps | Example |
+| Complexity | Model (OpenRouter / Anthropic / OpenAI / Gemini) | Max Steps | Example |
 |---|---|---|---|
-| trivial | `claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash` | 4 | "Hello", "Thanks" |
-| simple | `claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash` | 8 | "What is X?" |
-| moderate | `claude-sonnet-4-6` / `gpt-4o` / `gemini-2.5-flash` | 15 | "Compare X and Y" |
-| complex | `claude-opus-4-8` / `gpt-4o` / `gemini-2.5-flash` | 25 | "Debug this architecture issue" |
+| trivial | `openai/gpt-5.4-mini` / `claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash` | 4 | "Hello", "Thanks" |
+| simple | `openai/gpt-5.4-mini` / `claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash` | 8 | "What is X?" |
+| moderate | `openai/gpt-5.4` / `claude-sonnet-4-6` / `gpt-4o` / `gemini-2.5-flash` | 15 | "Compare X and Y" |
+| complex | `openai/gpt-5.4-pro` / `claude-opus-4-8` / `gpt-4o` / `gemini-2.5-flash` | 25 | "Debug this architecture issue" |
+
 
 ### Security Model
 
@@ -213,9 +216,9 @@ The result is deterministic (same question → same files read → same answer),
 </details>
 
 <details>
-<summary><b>Do I need all three AI provider keys?</b></summary>
+<summary><b>Do I need all the AI provider keys?</b></summary>
 
-No. You need **at least one**. The complexity router defaults to Anthropic models (Haiku for routing, Sonnet for moderate, Opus for complex), but you can use OpenAI or Google Gemini exclusively. Set the key(s) for the provider(s) you want to use.
+No. You need **at least one**. The recommended option is **OpenRouter** — a single key (`sk-or-...`) unlocks every vendor's models through one endpoint, so you never need to create separate OpenAI / Anthropic / Google keys.
 
 If you only have OpenAI, the router will use `gpt-4o-mini` for trivial/simple and `gpt-4o` for moderate. Complex questions will also use `gpt-4o`.
 </details>

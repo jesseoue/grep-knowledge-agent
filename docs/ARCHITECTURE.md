@@ -42,10 +42,10 @@ Nuxt 4 + Nitro application that serves:
 - **REST API** — `POST /api/chats`, `POST /api/sandbox/shell`, `POST /api/sync`, `GET /api/sources`
 - **Agent loop** — the AI SDK's `generateText` with tool calls: the model decides which `bash` commands to run, executes them through the sandbox, and composes an answer with citations.
 - **Complexity router** — a lightweight model classifies each question into `trivial | simple | moderate | complex`, selecting the step budget (4/8/15/25) and the model tier:
-  - trivial / simple → cheap tier (`claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash`)
-  - moderate → balanced tier (`claude-sonnet-4-6` / `gpt-4o` / `gemini-2.5-flash`)
-  - complex → powerful tier (`claude-opus-4-8` / `gpt-4o` / `gemini-2.5-flash`)
-  - The router is **provider-agnostic**: any single API key (OpenAI, Anthropic, or Gemini) is enough — it picks the right model from that provider.
+  - trivial / simple → cheap tier (`openai/gpt-5.4-mini` via OpenRouter / `claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash`)
+  - moderate → balanced tier (`openai/gpt-5.4` / `claude-sonnet-4-6` / `gpt-4o` / `gemini-2.5-flash`)
+  - complex → powerful tier (`openai/gpt-5.4-pro` / `claude-opus-4-8` / `gpt-4o` / `gemini-2.5-flash`)
+  - The router is **provider-agnostic**: any single API key (OpenRouter, OpenAI, Anthropic, or Gemini) is enough — it picks the right model from that provider. OpenRouter is preferred when set, because one key unlocks every vendor's models.
 - **GitHub sync** — clones configured `owner/repo` sources into the snapshot volume, keeping only docs files (`*.md`, `*.mdx`, `*.yml`, `*.yaml`, `*.json`).
 
 ### 2. Sandbox service (`sandbox-service`)

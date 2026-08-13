@@ -4,36 +4,46 @@
  * Models are organized into *tiers* (cheap / balanced / powerful), and each
  * tier maps to a concrete model ID per provider. The resolver in the web app
  * picks the provider the user has configured (bring-your-own-key), so the
- * template works with *any single* API key — OpenAI, Anthropic, or Google.
+ * template works with *any single* API key.
  *
- * Model IDs are kept current with each provider's latest stable releases.
+ * OpenRouter is the recommended provider: one key unlocks every model from
+ * every vendor (Anthropic, OpenAI, Google, DeepSeek, Qwen, …) through a
+ * single compatible endpoint. If only an OpenRouter key is set, the app uses
+ * OpenRouter models exclusively.
+ *
+ * Model IDs are verified against the live OpenRouter model catalog
+ * (https://openrouter.ai/api/v1/models) and each provider's current releases.
  * Update here and every consumer (router, chat, agent) picks it up.
- *
- * @see https://ai-sdk.dev/providers/ai-sdk-providers/openai
- * @see https://ai-sdk.dev/providers/ai-sdk-providers/anthropic
- * @see https://ai-sdk.dev/providers/ai-sdk-providers/google-generative-ai
  */
 
 export type ModelTier = 'cheap' | 'balanced' | 'powerful'
 export type Complexity = 'trivial' | 'simple' | 'moderate' | 'complex'
-export type Provider = 'anthropic' | 'openai' | 'gemini'
+export type Provider = 'openrouter' | 'anthropic' | 'openai' | 'gemini'
 
-/** Concrete model IDs per tier and provider. */
+/**
+ * Concrete model IDs per tier and provider.
+ *
+ * OpenRouter IDs are the `vendor/model` slugs from the OpenRouter catalog.
+ * Direct-provider IDs are that vendor's native API model string.
+ */
 export const MODEL_TIERS: Record<ModelTier, Record<Provider, string>> = {
   // Router / trivial / simple questions — fast + cheap
   cheap: {
+    openrouter: 'openai/gpt-5.4-mini',
     anthropic: 'claude-haiku-4-5',
     openai: 'gpt-4o-mini',
     gemini: 'gemini-2.5-flash',
   },
   // Moderate questions — strong reasoning
   balanced: {
+    openrouter: 'openai/gpt-5.4',
     anthropic: 'claude-sonnet-4-6',
     openai: 'gpt-4o',
     gemini: 'gemini-2.5-flash',
   },
   // Complex questions — deepest reasoning
   powerful: {
+    openrouter: 'openai/gpt-5.4-pro',
     anthropic: 'claude-opus-4-8',
     openai: 'gpt-4o',
     gemini: 'gemini-2.5-flash',
@@ -42,9 +52,9 @@ export const MODEL_TIERS: Record<ModelTier, Record<Provider, string>> = {
 
 /**
  * Preferred provider order when multiple keys are set.
- * Anthropic first (strongest), then OpenAI, then Gemini (free tier).
+ * OpenRouter first (one key, all models), then the direct providers.
  */
-export const PROVIDER_PRIORITY: Provider[] = ['anthropic', 'openai', 'gemini']
+export const PROVIDER_PRIORITY: Provider[] = ['openrouter', 'anthropic', 'openai', 'gemini']
 
 /** Map question complexity to the model tier used to answer it. */
 export const COMPLEXITY_TIER: Record<Complexity, ModelTier> = {
@@ -74,6 +84,9 @@ export const MODEL_ALIASES = {
   'opus': MODEL_TIERS.powerful.anthropic,
   'gpt-4o-mini': MODEL_TIERS.cheap.openai,
   'gpt-4o': MODEL_TIERS.balanced.openai,
+  'gpt-mini': MODEL_TIERS.cheap.openrouter,
+  'gpt': MODEL_TIERS.balanced.openrouter,
+  'gpt-pro': MODEL_TIERS.powerful.openrouter,
 } as const
 
 export type ModelAlias = keyof typeof MODEL_ALIASES

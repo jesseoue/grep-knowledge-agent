@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-08-12
+
+### Added — OpenRouter as the recommended AI provider
+- **OpenRouter support**: the app now speaks the [OpenRouter](https://openrouter.ai) API (`@ai-sdk/openai-compatible`) via a single `OPENROUTER_API_KEY`. One key unlocks every vendor's models — no need to create separate OpenAI / Anthropic / Google keys.
+- **OpenRouter is the preferred provider**: `PROVIDER_PRIORITY` is now `openrouter → anthropic → openai → gemini`. If only an OpenRouter key is set, the app uses OpenRouter models exclusively.
+- **Model tiers updated to current models**: the registry now points at verified, current model IDs from the live OpenRouter catalog — cheap `openai/gpt-5.4-mini`, balanced `openai/gpt-5.4`, powerful `openai/gpt-5.4-pro` (plus the existing direct-provider IDs for Anthropic / OpenAI / Gemini).
+- **Custom headers for OpenRouter attribution**: requests include `HTTP-Referer` and `X-Title` so usage shows up in the OpenRouter dashboard.
+- **Docs updated everywhere**: `README.md`, `docs/ENVIRONMENT.md`, `docs/ARCHITECTURE.md`, `docs/CUSTOMIZATION.md`, `docs/FAQ.md`, `docs/DEPLOYMENT.md`, and `apps/web/.env.example` now lead with OpenRouter as the recommended setup.
+
 ## [1.3.2] - 2026-08-12
 
 ### Fixed — one-click login (the critical one)

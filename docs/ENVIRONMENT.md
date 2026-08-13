@@ -14,6 +14,7 @@ All configuration is done via environment variables. On Railway these are set pe
 
 | Variable | Provider | Enables models |
 |---|---|---|
+| `OPENROUTER_API_KEY` | OpenRouter (recommended) | `openai/gpt-5.4-mini`, `openai/gpt-5.4`, `openai/gpt-5.4-pro` — *one key, every vendor* |
 | `OPENAI_API_KEY` | OpenAI | `gpt-4o`, `gpt-4o-mini` |
 | `ANTHROPIC_API_KEY` | Anthropic | `claude-haiku-4-5`, `claude-sonnet-4-6`, `claude-opus-4-8` |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Google Gemini | `gemini-2.5-flash` |
@@ -21,6 +22,13 @@ All configuration is done via environment variables. On Railway these are set pe
 The complexity router is **provider-agnostic**: it uses whichever provider you
 configured. Set any *one* key and the whole template works — it picks the right
 model per question difficulty from that provider.
+
+> **OpenRouter is recommended.** A single OpenRouter key (`sk-or-...`) unlocks
+> every model from every vendor (Anthropic, OpenAI, Google, DeepSeek, Qwen, …)
+> through one OpenAI-compatible endpoint. If only an OpenRouter key is set, the
+> app uses OpenRouter models exclusively — no need to create three separate
+> vendor keys.
+
 
 ## Optional
 
@@ -38,7 +46,17 @@ model per question difficulty from that provider.
 
 ## Getting your AI provider API keys
 
-You need at least one. The agent uses a **complexity router** — a cheap model classifies each question, then routes to the right model for the job. You can mix providers (e.g. OpenAI for the router + Anthropic for complex questions).
+You need at least one. The agent uses a **complexity router** — a cheap model classifies each question, then routes to the right model for the job. You can mix providers (e.g. OpenRouter for everything, or OpenAI for the router + Anthropic for complex questions).
+
+### OpenRouter (recommended)
+
+1. Go to **<https://openrouter.ai/settings/keys>**
+2. Sign in or create an account.
+3. Click **Create Key**, give it a name, and copy it (starts with `sk-or-...`).
+4. Set it as `OPENROUTER_API_KEY`.
+5. **Billing**: Add credits at <https://openrouter.ai/settings/credits>. OpenRouter bills per-model; you pay only for what you use.
+
+> **Which model?** With only an OpenRouter key set, the router uses `openai/gpt-5.4-mini` for trivial/simple questions, `openai/gpt-5.4` for moderate, and `openai/gpt-5.4-pro` for complex. Because OpenRouter exposes every vendor's models through one endpoint, you can override any tier to any model slug (e.g. `anthropic/claude-sonnet-4.6`, `deepseek/deepseek-v4-pro`) by editing `MODEL_TIERS` in `packages/agent/src/models.ts`. See <https://openrouter.ai/models> for the full catalog.
 
 ### OpenAI
 

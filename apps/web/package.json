@@ -21,6 +21,7 @@
     "@ai-sdk/anthropic": "^2.0.10",
     "@ai-sdk/google": "^2.0.10",
     "@ai-sdk/openai": "^2.0.10",
+    "@ai-sdk/openai-compatible": "^2.0.67",
     "@ai-sdk/vue": "^3.0.85",
     "@iconify-json/lucide": "^1.2.89",
     "@nuxt/ui": "^4.4.0",
