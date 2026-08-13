@@ -23,7 +23,7 @@ A self-hosted AI knowledge agent that replaces vector embeddings with `grep`, `f
 
 ## About Hosting a Grep Knowledge Agent
 
-The agent clones your GitHub repos into a snapshot volume, then uses a sandboxed shell to run read-only `grep`/`find`/`cat` commands against them. A complexity router classifies each question and routes to the right model — `gemini-2.0-flash` for trivial questions, `claude-sonnet-4` for moderate, `claude-opus-4` for complex. Every answer cites the files it read. Deploying on Railway gives you Postgres, Redis, persistent volumes, and private networking — all provisioned automatically with one click.
+The agent clones your GitHub repos into a snapshot volume, then uses a sandboxed shell to run read-only `grep`/`find`/`cat` commands against them. A provider-agnostic complexity router classifies each question and routes to the right model tier — cheap for trivial questions, balanced for moderate, powerful for complex — from whichever AI provider you configured. Every answer cites the files it read. Deploying on Railway gives you Postgres, Redis, persistent volumes, and private networking — all provisioned automatically with one click.
 
 ## Common Use Cases
 
@@ -61,12 +61,13 @@ Railway is a singular platform to deploy your infrastructure stack. Railway will
 ## ✨ Features
 
 - **No embeddings. No chunking. No vector DB.** A filesystem, `bash`, and an LLM.
-- **Complexity router** — a lightweight model classifies each question and routes to `gemini-2.0-flash` (trivial) → `claude-sonnet-4` (moderate) → `claude-opus-4` (complex), budgeting steps per difficulty.
+- **Provider-agnostic complexity router** — classifies each question and routes to the cheapest model tier from *whatever provider you configured* (any single key works): trivial → `claude-haiku-4-5`/`gpt-4o-mini`, moderate → `claude-sonnet-4-6`/`gpt-4o`, complex → `claude-opus-4-8`.
 - **Deterministic, explainable retrieval** — every answer cites the files it read, and the full command trace is in the UI.
 - **GitHub sources** — point it at any public repo and it clones the docs into a searchable snapshot.
 - **Bring-your-own-key** — no AI gateway lock-in. Use OpenAI, Anthropic, Google Gemini, or all three.
 - **Authentication** — GitHub OAuth + email/password (Better Auth).
 - **Auto-migration** — database tables are created automatically on first deploy.
+- **Credit / usage metering** — token usage is recorded per user; cap usage with `MAX_TOKENS_PER_USER` to bill against credits.
 - **Typed SDK** — chat app ships with `@grep/sdk` for embedding the agent anywhere.
 - **Defense-in-depth security** — three layers of command validation (SDK → web → sandbox).
 
@@ -167,14 +168,14 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the deep dive.
 
 ### Complexity Router
 
-The router classifies each question and selects the optimal model + step budget:
+The router classifies each question and selects the optimal model tier + step budget. The actual model comes from whichever provider you configured (bring-your-own-key — any single key works):
 
-| Complexity | Model | Max Steps | Example |
+| Complexity | Model (Anthropic / OpenAI / Gemini) | Max Steps | Example |
 |---|---|---|---|
-| trivial | `gemini-2.0-flash` / `gpt-4o-mini` | 4 | "Hello", "Thanks" |
-| simple | `gemini-2.0-flash` / `gpt-4o-mini` | 8 | "What is X?" |
-| moderate | `claude-sonnet-4` / `gpt-4o` | 15 | "Compare X and Y" |
-| complex | `claude-opus-4` | 25 | "Debug this architecture issue" |
+| trivial | `claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash` | 4 | "Hello", "Thanks" |
+| simple | `claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash` | 8 | "What is X?" |
+| moderate | `claude-sonnet-4-6` / `gpt-4o` / `gemini-2.5-flash` | 15 | "Compare X and Y" |
+| complex | `claude-opus-4-8` / `gpt-4o` / `gemini-2.5-flash` | 25 | "Debug this architecture issue" |
 
 ### Security Model
 

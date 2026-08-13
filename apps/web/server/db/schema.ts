@@ -107,3 +107,20 @@ export const verifications = pgTable('verification', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
+
+// --- Usage / credit metering -------------------------------------------------
+// Append-only ledger of token usage per request. Powers credit-based quotas
+// (MAX_TOKENS_PER_USER) and the /api/usage dashboard.
+export const usage = pgTable('usage', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  model: text('model'),
+  complexity: text('complexity', { enum: ['trivial', 'simple', 'moderate', 'complex'] }),
+  inputTokens: integer('input_tokens').notNull().default(0),
+  outputTokens: integer('output_tokens').notNull().default(0),
+  totalTokens: integer('total_tokens').notNull().default(0),
+  ...timestamps,
+}, table => [
+  index('usage_user_id_idx').on(table.userId),
+  index('usage_created_at_idx').on(table.createdAt),
+])

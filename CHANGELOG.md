@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-08-12
+
+### Fixed — critical runtime bugs
+- **Retired model IDs**: the registry pointed at `claude-sonnet-4-20250514` / `claude-opus-4-20250514` (retired June 15, 2026) and `gemini-2.0-flash` (shut down June 1, 2026), so any chat call would fail. Migrated to current models: `claude-haiku-4-5`, `claude-sonnet-4-6`, `claude-opus-4-8`, `gemini-2.5-flash`.
+- **Provider-agnostic router**: the router hard-depended on Anthropic (`claude-haiku-4`). Now it works with **any single API key** (OpenAI / Anthropic / Gemini), picking the right model per question complexity via a tiered registry with provider fallback.
+- **Broken sync**: the compound `if … fi` clone command was rejected by `validateSyncCommand`, so `POST /api/sync` always failed. Replaced with simple, allowed commands.
+- **Missing `git`**: the sandbox Docker image didn't install `git`, so repo cloning could never work. Added `git` + `ca-certificates`.
+
+### Security
+- **Command injection fixed**: `sync.post.ts` interpolated unsanitized `repo`/`branch` into shell strings. Added strict `owner/repo` + branch regex validation at the API boundary (and re-validates DB-stored repos).
+
+### Added — credit / usage metering
+- **`usage` ledger table** (append-only) recording token usage per request, with auto-migration.
+- **`MAX_TOKENS_PER_USER`** quota — cap all-time token usage per user (0 = unlimited) to bill against credits.
+- **`GET /api/usage`** endpoint + quota check in the chat flow + a "credits" meter in the command-trace sidebar.
+
+### Cleanup
+- Removed dead code: unused `resolveModel`/`resolveDefaultModel`/`providerForModelId`, stale `MODEL_ALIASES` docs references.
+- Updated `ENVIRONMENT.md`, `FAQ.md`, `CUSTOMIZATION.md`, `ARCHITECTURE.md`, `README.md` to reflect the new tiered model routing and quota env var.
+
 ## [1.2.2] - 2026-08-12
 
 ### Added — SEO & polish

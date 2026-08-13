@@ -24,29 +24,38 @@ Agent configuration lives in the `agent_config` table and is seeded via the app:
 
 ## Model routing
 
-The complexity router classifies questions and selects models. The model registry lives in `packages/agent/src/models.ts` — update it there and every consumer picks it up:
+The complexity router classifies questions and selects a model *tier*. The tier → concrete-model mapping lives in `packages/agent/src/models.ts` — update it there and every consumer picks it up:
 
 ```ts
-export const MODEL_ALIASES = {
-  'gemini-flash': 'gemini-2.0-flash',
-  'sonnet': 'claude-sonnet-4-20250514',
-  'opus': 'claude-opus-4-20250514',
-  'haiku': 'claude-haiku-4-20250514',
-  'gpt-4o-mini': 'gpt-4o-mini',
-  'gpt-4o': 'gpt-4o',
-}
+export const MODEL_TIERS = {
+  cheap: {
+    anthropic: 'claude-haiku-4-5',
+    openai: 'gpt-4o-mini',
+    gemini: 'gemini-2.5-flash',
+  },
+  balanced: {
+    anthropic: 'claude-sonnet-4-6',
+    openai: 'gpt-4o',
+    gemini: 'gemini-2.5-flash',
+  },
+  powerful: {
+    anthropic: 'claude-opus-4-8',
+    openai: 'gpt-4o',
+    gemini: 'gemini-2.5-flash',
+  },
+} as const
 ```
 
-The router model (used to classify questions) defaults to `haiku` (Claude Haiku 4 — fast and cheap). The main model is selected by the router based on question complexity:
+The router model (used to classify questions) uses the `cheap` tier. The main model is selected by question complexity:
 
-| Complexity | Model | Max steps |
+| Complexity | Tier | Max steps |
 |---|---|---|
-| trivial | `gemini-flash` or `gpt-4o-mini` | 4 |
-| simple | `gemini-flash` or `gpt-4o-mini` | 8 |
-| moderate | `sonnet` or `gpt-4o` | 15 |
-| complex | `opus` | 25 |
+| trivial | cheap | 4 |
+| simple | cheap | 8 |
+| moderate | balanced | 15 |
+| complex | powerful | 25 |
 
-To change which provider handles which tier, edit the model aliases in `packages/agent/src/models.ts`.
+The concrete provider is chosen at runtime from the API keys you configured (`ANTHROPIC_API_KEY` → `OPENAI_API_KEY` → `GOOGLE_GENERATIVE_AI_API_KEY` priority). To change which provider handles which tier, edit `MODEL_TIERS` and `PROVIDER_PRIORITY` in `packages/agent/src/models.ts`.
 
 ## Using the SDK outside the app
 

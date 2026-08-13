@@ -17,6 +17,7 @@ const sources = ref<{ total: number, snapshotRepo: string | null } | null>(null)
 const chatScroll = ref<HTMLDivElement | null>(null)
 const showTrace = ref(false)
 const lastUsage = ref<Usage | null>(null)
+const usageSummary = ref<{ totalTokens: number, totalRequests: number, quota: number | null, remaining: number | null } | null>(null)
 
 const session = authClient.useSession()
 
@@ -34,6 +35,15 @@ onMounted(async () => {
     }
   } catch {
     // sources unavailable — non-fatal
+  }
+
+  try {
+    const res = await fetch('/api/usage')
+    if (res.ok) {
+      usageSummary.value = await res.json()
+    }
+  } catch {
+    // usage unavailable — non-fatal
   }
 })
 
@@ -219,6 +229,17 @@ async function sendMessage() {
             <p class="font-mono text-[10px] text-zinc-600">tokens used</p>
             <p class="mt-1 font-mono text-[11px] text-zinc-400">
               {{ lastUsage.totalTokens?.toLocaleString() || '—' }} total
+            </p>
+          </div>
+
+          <!-- Credit / quota meter -->
+          <div v-if="usageSummary" class="mt-4 border-t border-zinc-800 pt-3">
+            <p class="font-mono text-[10px] text-zinc-600">
+              credits
+              <span v-if="usageSummary.quota">· {{ usageSummary.remaining?.toLocaleString() }} of {{ usageSummary.quota.toLocaleString() }} left</span>
+            </p>
+            <p class="mt-1 font-mono text-[11px] text-zinc-400">
+              {{ usageSummary.totalTokens.toLocaleString() }} tokens · {{ usageSummary.totalRequests }} requests
             </p>
           </div>
         </div>

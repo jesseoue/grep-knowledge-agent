@@ -41,11 +41,11 @@ Nuxt 4 + Nitro application that serves:
 - **Settings** — add/manage sources, trigger syncs
 - **REST API** — `POST /api/chats`, `POST /api/sandbox/shell`, `POST /api/sync`, `GET /api/sources`
 - **Agent loop** — the AI SDK's `generateText` with tool calls: the model decides which `bash` commands to run, executes them through the sandbox, and composes an answer with citations.
-- **Complexity router** — a lightweight model classifies each question into `trivial | simple | moderate | complex`, selecting the model and step budget:
-  - trivial (4 steps) → `gemini-2.0-flash` or `gpt-4o-mini`
-  - simple (8 steps) → `gemini-2.0-flash` or `gpt-4o-mini`
-  - moderate (15 steps) → `claude-sonnet-4` / `gpt-4o`
-  - complex (25 steps) → `claude-opus-4`
+- **Complexity router** — a lightweight model classifies each question into `trivial | simple | moderate | complex`, selecting the step budget (4/8/15/25) and the model tier:
+  - trivial / simple → cheap tier (`claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash`)
+  - moderate → balanced tier (`claude-sonnet-4-6` / `gpt-4o` / `gemini-2.5-flash`)
+  - complex → powerful tier (`claude-opus-4-8` / `gpt-4o` / `gemini-2.5-flash`)
+  - The router is **provider-agnostic**: any single API key (OpenAI, Anthropic, or Gemini) is enough — it picks the right model from that provider.
 - **GitHub sync** — clones configured `owner/repo` sources into the snapshot volume, keeping only docs files (`*.md`, `*.mdx`, `*.yml`, `*.yaml`, `*.json`).
 
 ### 2. Sandbox service (`sandbox-service`)
@@ -69,7 +69,7 @@ The web service reaches it over the Railway private network (`SANDBOX_URL`, defa
 
 | Store | Railway primitive | Purpose |
 |---|---|---|
-| PostgreSQL | Railway Postgres plugin | Users, chats, messages, sources, agent config |
+| PostgreSQL | Railway Postgres plugin | Users, chats, messages, sources, agent config, usage ledger |
 | Redis | Railway Redis + volume | Sandbox sessions, rate limits |
 | Snapshot | Railway Volume | The actual cloned knowledge base that the sandbox searches |
 
@@ -104,14 +104,15 @@ User clicks "Sync"             →  POST /api/sync
 ```
 User message → POST /api/chats
               ├─ rate limit check (Redis or in-memory, 20 req/min per user)
+              ├─ credit quota check (MAX_TOKENS_PER_USER, optional)
               ├─ router model classifies complexity (4/8/15/25 steps)
-              ├─ main model instantiated (provider from env keys)
+              ├─ main model instantiated from complexity tier + provider keys
               ├─ generateText with bash tools:
-              │    ├─ abortSignal: req.signal (stops on disconnect)
+              │    ├─ abortSignal (2-min cap, stops on disconnect)
               │    ├─ bash / bash_batch tool → POST /api/sandbox/shell
               │    │                          → sandbox grep/find/cat
-              │    ├─ onStepEnd: log per-step token usage
               │    └─ compose answer + citations
+              ├─ usage recorded to the `usage` ledger (credit metering)
               └─ response returns { text, references, trace, usage }
                  - trace: every shell command the agent ran (drives the
                    "command trace" sidebar in the UI — no black box)

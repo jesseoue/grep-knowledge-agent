@@ -17,8 +17,12 @@ All configuration is done via environment variables. On Railway these are set pe
 | Variable | Provider | Enables models |
 |---|---|---|
 | `OPENAI_API_KEY` | OpenAI | `gpt-4o`, `gpt-4o-mini` |
-| `ANTHROPIC_API_KEY` | Anthropic | `claude-sonnet-4`, `claude-opus-4`, `claude-haiku-4` |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Google Gemini | `gemini-2.0-flash`, `gemini-2.5-flash` |
+| `ANTHROPIC_API_KEY` | Anthropic | `claude-haiku-4-5`, `claude-sonnet-4-6`, `claude-opus-4-8` |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google Gemini | `gemini-2.5-flash` |
+
+The complexity router is **provider-agnostic**: it uses whichever provider you
+configured. Set any *one* key and the whole template works — it picks the right
+model per question difficulty from that provider.
 
 ## Optional
 
@@ -28,6 +32,7 @@ All configuration is done via environment variables. On Railway these are set pe
 | `SNAPSHOT_BRANCH` | `main` | Branch to clone. |
 | `SANDBOX_URL` | `http://sandbox.railway.internal:3200` | Private hostname of the sandbox service. |
 | `PUBLIC_SITE_URL` | — | Your public app URL (used for auth trusted origins). |
+| `MAX_TOKENS_PER_USER` | `0` (unlimited) | Credit quota — max tokens a user may consume (all-time). Set to cap free usage and bill against credits. |
 
 ---
 
@@ -53,7 +58,7 @@ You need at least one. The agent uses a **complexity router** — a cheap model 
 4. Set it as `ANTHROPIC_API_KEY`.
 5. **Billing**: Add credits at <https://console.anthropic.com/settings/billing>. Anthropic uses pre-paid credits (no automatic billing).
 
-> **Which model?** The router uses `claude-haiku-4` to classify questions, then routes to `claude-sonnet-4` (moderate) or `claude-opus-4` (complex). See <https://docs.anthropic.com/en/docs/about-claude/models> for details.
+> **Which model?** The router uses `claude-haiku-4-5` to classify questions, then routes to `claude-sonnet-4-6` (moderate) or `claude-opus-4-8` (complex). See <https://platform.claude.com/docs/en/about-claude/models/overview> for details.
 
 ### Google Gemini
 
@@ -63,7 +68,7 @@ You need at least one. The agent uses a **complexity router** — a cheap model 
 4. Copy the key (starts with `AIza...`) and set it as `GOOGLE_GENERATIVE_AI_API_KEY`.
 5. **Billing**: Google AI Studio has a **free tier** (15 RPM, 1500 requests/day) that's enough to try the template. For production, enable billing at <https://aistudio.google.com/billing>.
 
-> **Which model?** The router uses `gemini-2.0-flash` for trivial/simple questions and can fall back to it for moderate ones. See <https://ai.google.dev/gemini-api/docs/models> for the full list.
+> **Which model?** The template uses `gemini-2.5-flash` for every tier when Gemini is your only provider. See <https://ai.google.dev/gemini-api/docs/models> for the full list.
 
 ---
 

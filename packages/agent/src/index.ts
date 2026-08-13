@@ -4,10 +4,11 @@ export type { AgentConfig } from './router/schema'
 export { buildChatSystemPrompt, ROUTER_SYSTEM_PROMPT } from './prompts'
 export {
   MODEL_ALIASES,
-  ROUTER_MODEL_ALIAS,
-  DEFAULT_MODEL_ALIAS,
-  ROUTER_MODEL_CHOICES,
+  MODEL_TIERS,
+  PROVIDER_PRIORITY,
+  COMPLEXITY_TIER,
+  tierForComplexity,
   resolveModelId,
 } from './models'
-export type { ModelAlias } from './models'
+export type { ModelAlias, ModelTier, Complexity, Provider } from './models'
 export type { AgentConfigData, RoutingResult, AgentCallOptions, AgentExecutionContext } from './types'

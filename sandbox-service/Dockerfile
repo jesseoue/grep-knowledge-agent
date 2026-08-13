@@ -3,9 +3,9 @@ FROM node:24-slim
 
 WORKDIR /app
 
-# Minimal runtime deps for grep/find/cat on node:24-slim
+# Minimal runtime deps for grep/find/cat + git (repo sync) on node:24-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    grep findutils coreutils \
+    grep findutils coreutils git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Self-contained: the sandbox has zero runtime npm dependencies.

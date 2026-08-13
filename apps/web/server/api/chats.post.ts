@@ -4,7 +4,8 @@ import { createSavoir } from '@grep/sdk'
 import { routeQuestion, buildChatSystemPrompt } from '@grep/agent'
 import { getAgentConfig } from '../lib/agent-config'
 import { requireUserSession } from '../lib/session'
-import { resolveRouterModel, resolveModel, hasAIProvider } from '../lib/models'
+import { resolveRouterModel, resolveModelForComplexity, hasAIProvider } from '../lib/models'
+import { checkQuota, recordUsage } from '../lib/usage'
 
 const bodySchema = z.object({
   messages: z.array(z.object({
@@ -73,6 +74,19 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // Credit quota — block if the user exceeded their token budget
+  const quota = await checkQuota(session.user.id)
+  if (!quota.allowed) {
+    throw createError({
+      statusCode: 429,
+      statusMessage: 'Quota exceeded',
+      data: {
+        why: `You've used ${quota.summary.totalTokens} of ${quota.summary.quota} tokens.`,
+        fix: 'Upgrade your plan or wait for your quota to reset.',
+      },
+    })
+  }
+
   if (!hasAIProvider()) {
     throw createError({
       statusCode: 500,
@@ -90,12 +104,13 @@ export default defineEventHandler(async (event) => {
     parts: [{ type: 'text', text: m.content }],
   }))
 
-  // Classify question complexity to budget model + steps
+  // Classify question complexity to budget steps + model tier
   const routerModel = resolveRouterModel()
   const routerConfig = await routeQuestion(messages as any, routerModel)
 
-  // Resolve the main model from the router's choice
-  const mainModel = resolveModel(routerConfig.model)
+  // Resolve the main model from the question's complexity (provider-agnostic —
+  // works with any single configured API key).
+  const mainModel = resolveModelForComplexity(routerConfig.complexity)
 
   const baseUrl = getRequestURL(event).origin
   const savoir = createSavoir({
@@ -133,13 +148,20 @@ export default defineEventHandler(async (event) => {
     if (usage) {
       console.log('[chat] total usage', {
         userId: session.user.id,
-        model: routerConfig.model,
         complexity: routerConfig.complexity,
         inputTokens: usage.inputTokens,
         outputTokens: usage.outputTokens,
         totalTokens: usage.totalTokens,
         steps: steps?.length || 0,
         finishReason,
+      })
+
+      // Persist usage to the credit ledger (best-effort — never blocks the reply)
+      await recordUsage(session.user.id, {
+        complexity: routerConfig.complexity,
+        inputTokens: usage.inputTokens ?? 0,
+        outputTokens: usage.outputTokens ?? 0,
+        totalTokens: usage.totalTokens ?? 0,
       })
     }
 

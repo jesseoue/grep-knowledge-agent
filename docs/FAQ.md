@@ -19,15 +19,15 @@ No chunking, no embeddings, no vector DB. The result is deterministic, explainab
 
 ## Do I need all three AI provider keys?
 
-No. You need **at least one**. The complexity router defaults to Anthropic models:
+No. You need **at least one**. The router is **provider-agnostic** — it picks the right model for each question difficulty from whichever provider you configured:
 
-- **Router**: `claude-haiku-4` (classifies question complexity)
-- **Moderate**: `claude-sonnet-4`
-- **Complex**: `claude-opus-4`
+| Tier | Anthropic | OpenAI | Gemini |
+|---|---|---|---|
+| Router / cheap | `claude-haiku-4-5` | `gpt-4o-mini` | `gemini-2.5-flash` |
+| Moderate | `claude-sonnet-4-6` | `gpt-4o` | `gemini-2.5-flash` |
+| Complex | `claude-opus-4-8` | `gpt-4o` | `gemini-2.5-flash` |
 
-If you only have OpenAI, the router will use `gpt-4o-mini` for trivial/simple and `gpt-4o` for moderate/complex. If you only have Google Gemini, it uses `gemini-2.0-flash` for trivial/simple.
-
-You can mix providers — e.g. Anthropic for the router + OpenAI for complex questions. Just set the keys for the providers you want to use.
+If you set multiple keys, Anthropic is preferred, then OpenAI, then Gemini. Any single key is enough for the whole app to work.
 
 ## Is the sandbox secure?
 
@@ -72,14 +72,14 @@ To change this, edit the `find -delete` command in `apps/web/server/api/sync.pos
 
 ## How does the complexity router work?
 
-A lightweight model (Claude Haiku 4 by default) classifies each question into one of four tiers:
+A lightweight model (the cheapest tier of your configured provider) classifies each question into one of four tiers:
 
-| Tier | Max Steps | Model | Example |
+| Tier | Max Steps | Model (Anthropic / OpenAI / Gemini) | Example |
 |---|---|---|---|
-| trivial | 4 | gemini-2.0-flash / gpt-4o-mini | "Hello", "Thanks" |
-| simple | 8 | gemini-2.0-flash / gpt-4o-mini | "What is X?" |
-| moderate | 15 | claude-sonnet-4 / gpt-4o | "Compare X and Y" |
-| complex | 25 | claude-opus-4 | "Debug this architecture issue" |
+| trivial | 4 | claude-haiku-4-5 / gpt-4o-mini / gemini-2.5-flash | "Hello", "Thanks" |
+| simple | 8 | claude-haiku-4-5 / gpt-4o-mini / gemini-2.5-flash | "What is X?" |
+| moderate | 15 | claude-sonnet-4-6 / gpt-4o / gemini-2.5-flash | "Compare X and Y" |
+| complex | 25 | claude-opus-4-8 / gpt-4o / gemini-2.5-flash | "Debug this architecture issue" |
 
 This saves cost — trivial questions use cheap models with few steps, complex questions get the strongest model with more steps.
 
@@ -88,13 +88,22 @@ This saves cost — trivial questions use cheap models with few steps, complex q
 Edit `packages/agent/src/models.ts`:
 
 ```ts
-export const MODEL_ALIASES = {
-  'gemini-flash': 'gemini-2.0-flash',
-  'sonnet': 'claude-sonnet-4-20250514',
-  'opus': 'claude-opus-4-20250514',
-  'haiku': 'claude-haiku-4-20250514',
-  'gpt-4o-mini': 'gpt-4o-mini',
-  'gpt-4o': 'gpt-4o',
+export const MODEL_TIERS = {
+  cheap: {
+    anthropic: 'claude-haiku-4-5',
+    openai: 'gpt-4o-mini',
+    gemini: 'gemini-2.5-flash',
+  },
+  balanced: {
+    anthropic: 'claude-sonnet-4-6',
+    openai: 'gpt-4o',
+    gemini: 'gemini-2.5-flash',
+  },
+  powerful: {
+    anthropic: 'claude-opus-4-8',
+    openai: 'gpt-4o',
+    gemini: 'gemini-2.5-flash',
+  },
 } as const
 ```
 

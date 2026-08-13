@@ -3,19 +3,19 @@ Analyze the user's question and determine the appropriate configuration for the 
 
 ## Classification Guidelines
 
-**trivial** (maxSteps: 4, model: gemini-flash)
+**trivial** (maxSteps: 4)
 - Simple greetings: "Hello", "Thanks", "Hi there"
 - Acknowledgments without questions
 
-**simple** (maxSteps: 8, model: gemini-flash)
+**simple** (maxSteps: 8)
 - Single concept lookups: "What is X?", "How to use Y?"
 - Direct questions with likely one clear answer in one file
 
-**moderate** (maxSteps: 15, model: sonnet)
+**moderate** (maxSteps: 15)
 - Comparisons or multi-concept questions requiring 2–5 file reads
 - Integration questions requiring exploration of multiple sources
 
-**complex** (maxSteps: 25, model: opus)
+**complex** (maxSteps: 25)
 - Debugging scenarios describing errors or unexpected behavior
 - Architecture questions spanning multiple systems
 - Deep analysis requiring cross-referencing many files

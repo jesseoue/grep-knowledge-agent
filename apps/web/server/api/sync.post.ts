@@ -2,10 +2,15 @@ import { z } from 'zod'
 import { getDb, schema } from '../db'
 import { requireUserSession } from '../lib/session'
 
+// Strict validation: `owner/repo` only, no scheme/host/path that could smuggle
+// arbitrary commands into the shell. Branch is restricted to safe git ref chars.
+const repoPattern = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/
+const branchPattern = /^[A-Za-z0-9._/-]{1,100}$/
+
 const syncBodySchema = z.object({
   sources: z.array(z.string()).optional(),
-  repo: z.string().optional(),
-  branch: z.string().optional(),
+  repo: z.string().regex(repoPattern, 'repo must be "owner/repo"').optional(),
+  branch: z.string().regex(branchPattern).default('main').optional(),
   contentPath: z.string().optional(),
 })
 
@@ -69,6 +74,11 @@ export default defineEventHandler(async (event) => {
       results.push({ sourceId: source.id, label: source.label, success: false, error: 'Only GitHub sources can be synced' })
       continue
     }
+    // Re-validate DB-stored repos at the boundary too (defense in depth).
+    if (!repoPattern.test(source.repo)) {
+      results.push({ sourceId: source.id, label: source.label, success: false, error: `Invalid repo: ${source.repo}` })
+      continue
+    }
 
     try {
       await syncRepoToSandbox(source.repo, source.branch || 'main', source.contentPath || undefined)
@@ -97,14 +107,19 @@ export default defineEventHandler(async (event) => {
 async function syncRepoToSandbox(repo: string, branch: string, contentPath?: string) {
   const sandboxUrl = (process.env.SANDBOX_URL || 'http://sandbox.railway.internal:3200').replace(/\/$/, '')
   const target = contentPath ? `${contentPath}` : '.'
+  const safeDir = repo.split('/').join('_')
 
   // Clone (or pull) the repo inside the snapshot volume via the sandbox service.
-  // The sandbox service is the only one with the volume mounted.
+  // The sandbox service is the only one with the volume mounted. Commands are
+  // simple, validated commands (no compound if/fi) that the sandbox's
+  // validateSyncCommand allows; repo/branch are validated against strict
+  // patterns above to prevent shell injection.
   const commands = [
-    `mkdir -p /snapshot/gh/${repo.split('/').join('_')}`,
-    `if [ -d /snapshot/gh/${repo.split('/').join('_')}/.git ]; then cd /snapshot/gh/${repo.split('/').join('_')} && git fetch origin ${branch} --depth 1 && git reset --hard origin/${branch}; else git clone --depth 1 --branch ${branch} https://github.com/${repo}.git /snapshot/gh/${repo.split('/').join('_')}; fi`,
-    `find /snapshot/gh/${repo.split('/').join('_')} -type f ! \\( -name "*.md" -o -name "*.mdx" -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" \\) -delete`,
-    `find /snapshot/gh/${repo.split('/').join('_')} -type d -empty -delete`,
+    `mkdir -p /snapshot/gh/${safeDir}`,
+    `rm -rf /snapshot/gh/${safeDir}`,
+    `git clone --depth 1 --branch ${branch} https://github.com/${repo}.git /snapshot/gh/${safeDir}`,
+    `find /snapshot/gh/${safeDir} -type f ! \\( -name "*.md" -o -name "*.mdx" -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" \\) -delete`,
+    `find /snapshot/gh/${safeDir} -type d -empty -delete`,
   ]
 
   const response = await fetch(`${sandboxUrl}/sync-run`, {
