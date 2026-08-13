@@ -61,7 +61,7 @@ Railway is a singular platform to deploy your infrastructure stack. Railway will
 ## ✨ Features
 
 - **No embeddings. No chunking. No vector DB.** A filesystem, `bash`, and an LLM.
-- **Provider-agnostic complexity router** — classifies each question and routes to the cheapest model tier from *whatever provider you configured* (any single key works). **OpenRouter preferred** — one key unlocks every vendor's models: trivial → `openai/gpt-5.4-mini`/`claude-haiku-4-5`, moderate → `openai/gpt-5.4`/`claude-sonnet-4-6`, complex → `openai/gpt-5.4-pro`/`claude-opus-4-8`.
+- **Provider-agnostic complexity router** — classifies each question and routes to the cheapest model tier from *whatever provider you configured* (any single key works). **OpenRouter preferred** — one key unlocks every vendor's models: trivial → `openai/gpt-5.6-luna`/`claude-haiku-4-5`, moderate → `openai/gpt-5.6-terra`/`claude-sonnet-4-6`, complex → `openai/gpt-5.6-sol`/`claude-opus-4-8`.
 - **Deterministic, explainable retrieval** — every answer cites the files it read, and the full command trace is in the UI.
 - **GitHub sources** — point it at any public repo and it clones the docs into a searchable snapshot.
 - **Bring-your-own-key** — no AI gateway lock-in. Use OpenAI, Anthropic, Google Gemini, or all three.
@@ -179,10 +179,10 @@ The router classifies each question and selects the optimal model tier + step bu
 
 | Complexity | Model (OpenRouter / Anthropic / OpenAI / Gemini) | Max Steps | Example |
 |---|---|---|---|
-| trivial | `openai/gpt-5.4-mini` / `claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash` | 4 | "Hello", "Thanks" |
-| simple | `openai/gpt-5.4-mini` / `claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash` | 8 | "What is X?" |
-| moderate | `openai/gpt-5.4` / `claude-sonnet-4-6` / `gpt-4o` / `gemini-2.5-flash` | 15 | "Compare X and Y" |
-| complex | `openai/gpt-5.4-pro` / `claude-opus-4-8` / `gpt-4o` / `gemini-2.5-flash` | 25 | "Debug this architecture issue" |
+| trivial | `openai/gpt-5.6-luna` / `claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash` | 4 | "Hello", "Thanks" |
+| simple | `openai/gpt-5.6-luna` / `claude-haiku-4-5` / `gpt-4o-mini` / `gemini-2.5-flash` | 8 | "What is X?" |
+| moderate | `openai/gpt-5.6-terra` / `claude-sonnet-4-6` / `gpt-4o` / `gemini-2.5-flash` | 15 | "Compare X and Y" |
+| complex | `openai/gpt-5.6-sol` / `claude-opus-4-8` / `gpt-4o` / `gemini-2.5-flash` | 25 | "Debug this architecture issue" |
 
 
 ### Security Model

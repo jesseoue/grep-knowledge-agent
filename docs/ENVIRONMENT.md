@@ -14,7 +14,7 @@ All configuration is done via environment variables. On Railway these are set pe
 
 | Variable | Provider | Enables models |
 |---|---|---|
-| `OPENROUTER_API_KEY` | OpenRouter (recommended) | `openai/gpt-5.4-mini`, `openai/gpt-5.4`, `openai/gpt-5.4-pro` — *one key, every vendor* |
+| `OPENROUTER_API_KEY` | OpenRouter (recommended) | `openai/gpt-5.6-luna`, `openai/gpt-5.6-terra`, `openai/gpt-5.6-sol` — *one key, every vendor* |
 | `OPENAI_API_KEY` | OpenAI | `gpt-4o`, `gpt-4o-mini` |
 | `ANTHROPIC_API_KEY` | Anthropic | `claude-haiku-4-5`, `claude-sonnet-4-6`, `claude-opus-4-8` |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Google Gemini | `gemini-2.5-flash` |
@@ -56,7 +56,7 @@ You need at least one. The agent uses a **complexity router** — a cheap model 
 4. Set it as `OPENROUTER_API_KEY`.
 5. **Billing**: Add credits at <https://openrouter.ai/settings/credits>. OpenRouter bills per-model; you pay only for what you use.
 
-> **Which model?** With only an OpenRouter key set, the router uses `openai/gpt-5.4-mini` for trivial/simple questions, `openai/gpt-5.4` for moderate, and `openai/gpt-5.4-pro` for complex. Because OpenRouter exposes every vendor's models through one endpoint, you can override any tier to any model slug (e.g. `anthropic/claude-sonnet-4.6`, `deepseek/deepseek-v4-pro`) by editing `MODEL_TIERS` in `packages/agent/src/models.ts`. See <https://openrouter.ai/models> for the full catalog.
+> **Which model?** With only an OpenRouter key set, the router uses `openai/gpt-5.6-luna` for trivial/simple questions, `openai/gpt-5.6-terra` for moderate, and `openai/gpt-5.6-sol` for complex. Because OpenRouter exposes every vendor's models through one endpoint, you can override any tier to any model slug (e.g. `anthropic/claude-sonnet-4.6`, `deepseek/deepseek-v4-pro`) by editing `MODEL_TIERS` in `packages/agent/src/models.ts`. See <https://openrouter.ai/models> for the full catalog.
 
 ### OpenAI
 

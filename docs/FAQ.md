@@ -23,9 +23,9 @@ No. You need **at least one**. The router is **provider-agnostic** — it picks 
 
 | Tier | OpenRouter (recommended) | Anthropic | OpenAI | Gemini |
 |---|---|---|---|---|
-| Router / cheap | `openai/gpt-5.4-mini` | `claude-haiku-4-5` | `gpt-4o-mini` | `gemini-2.5-flash` |
-| Moderate | `openai/gpt-5.4` | `claude-sonnet-4-6` | `gpt-4o` | `gemini-2.5-flash` |
-| Complex | `openai/gpt-5.4-pro` | `claude-opus-4-8` | `gpt-4o` | `gemini-2.5-flash` |
+| Router / cheap | `openai/gpt-5.6-luna` | `claude-haiku-4-5` | `gpt-4o-mini` | `gemini-2.5-flash` |
+| Moderate | `openai/gpt-5.6-terra` | `claude-sonnet-4-6` | `gpt-4o` | `gemini-2.5-flash` |
+| Complex | `openai/gpt-5.6-sol` | `claude-opus-4-8` | `gpt-4o` | `gemini-2.5-flash` |
 
 If you set multiple keys, **OpenRouter is preferred** (one key, every model), then Anthropic, then OpenAI, then Gemini. Any single key is enough for the whole app to work.
 
@@ -76,10 +76,10 @@ A lightweight model (the cheapest tier of your configured provider) classifies e
 
 | Tier | Max Steps | Model (OpenRouter / Anthropic / OpenAI / Gemini) | Example |
 |---|---|---|---|
-| trivial | 4 | openai/gpt-5.4-mini / claude-haiku-4-5 / gpt-4o-mini / gemini-2.5-flash | "Hello", "Thanks" |
-| simple | 8 | openai/gpt-5.4-mini / claude-haiku-4-5 / gpt-4o-mini / gemini-2.5-flash | "What is X?" |
-| moderate | 15 | openai/gpt-5.4 / claude-sonnet-4-6 / gpt-4o / gemini-2.5-flash | "Compare X and Y" |
-| complex | 25 | openai/gpt-5.4-pro / claude-opus-4-8 / gpt-4o / gemini-2.5-flash | "Debug this architecture issue" |
+| trivial | 4 | openai/gpt-5.6-luna / claude-haiku-4-5 / gpt-4o-mini / gemini-2.5-flash | "Hello", "Thanks" |
+| simple | 8 | openai/gpt-5.6-luna / claude-haiku-4-5 / gpt-4o-mini / gemini-2.5-flash | "What is X?" |
+| moderate | 15 | openai/gpt-5.6-terra / claude-sonnet-4-6 / gpt-4o / gemini-2.5-flash | "Compare X and Y" |
+| complex | 25 | openai/gpt-5.6-sol / claude-opus-4-8 / gpt-4o / gemini-2.5-flash | "Debug this architecture issue" |
 
 This saves cost — trivial questions use cheap models with few steps, complex questions get the strongest model with more steps.
 
@@ -90,19 +90,19 @@ Edit `packages/agent/src/models.ts`:
 ```ts
 export const MODEL_TIERS = {
   cheap: {
-    openrouter: 'openai/gpt-5.4-mini',
+    openrouter: 'openai/gpt-5.6-luna',
     anthropic: 'claude-haiku-4-5',
     openai: 'gpt-4o-mini',
     gemini: 'gemini-2.5-flash',
   },
   balanced: {
-    openrouter: 'openai/gpt-5.4',
+    openrouter: 'openai/gpt-5.6-terra',
     anthropic: 'claude-sonnet-4-6',
     openai: 'gpt-4o',
     gemini: 'gemini-2.5-flash',
   },
   powerful: {
-    openrouter: 'openai/gpt-5.4-pro',
+    openrouter: 'openai/gpt-5.6-sol',
     anthropic: 'claude-opus-4-8',
     openai: 'gpt-4o',
     gemini: 'gemini-2.5-flash',

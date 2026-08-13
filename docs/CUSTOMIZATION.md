@@ -29,19 +29,19 @@ The complexity router classifies questions and selects a model *tier*. The tier 
 ```ts
 export const MODEL_TIERS = {
   cheap: {
-    openrouter: 'openai/gpt-5.4-mini',
+    openrouter: 'openai/gpt-5.6-luna',
     anthropic: 'claude-haiku-4-5',
     openai: 'gpt-4o-mini',
     gemini: 'gemini-2.5-flash',
   },
   balanced: {
-    openrouter: 'openai/gpt-5.4',
+    openrouter: 'openai/gpt-5.6-terra',
     anthropic: 'claude-sonnet-4-6',
     openai: 'gpt-4o',
     gemini: 'gemini-2.5-flash',
   },
   powerful: {
-    openrouter: 'openai/gpt-5.4-pro',
+    openrouter: 'openai/gpt-5.6-sol',
     anthropic: 'claude-opus-4-8',
     openai: 'gpt-4o',
     gemini: 'gemini-2.5-flash',
