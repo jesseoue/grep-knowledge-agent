@@ -25,7 +25,6 @@ export const ALLOWED_BASH_COMMANDS = new Set([
   'uniq',
   'cut',
   'awk',
-  'sed',
   'tr',
   'column',
   // Utilities

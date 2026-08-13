@@ -24,6 +24,10 @@ const execFileAsync = promisify(execFile)
 
 const SNAPSHOT_DIR = process.env.SNAPSHOT_DIR || '/snapshot'
 const PORT = Number(process.env.PORT || 3200)
+// Shared secret between web and sandbox services. If SANDBOX_SECRET is set,
+// all requests must include it in the X-Sandbox-Key header. This prevents
+// unauthorized command execution from other services on the private network.
+const SANDBOX_SECRET = process.env.SANDBOX_SECRET || ''
 interface RunRequest {
   commands?: string[]
   sessionId?: string
@@ -138,14 +142,13 @@ async function runCommandUnchecked(command: string, cwd: string): Promise<{ comm
 }
 
 const server = createServer(async (req, res) => {
-  // CORS not needed (private network), but allow same-origin for dev
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
-
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204)
-    res.end()
+  // Private network only — no CORS needed (web service calls via Railway
+  // internal network). Reject any request with an Origin header to prevent
+  // browser-based attacks from public origins.
+  const origin = req.headers.origin
+  if (origin) {
+    res.writeHead(403, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: 'Browser requests are not allowed' }))
     return
   }
 
@@ -157,6 +160,12 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && url.pathname === '/run') {
+    // Verify shared secret if configured
+    if (SANDBOX_SECRET && req.headers['x-sandbox-key'] !== SANDBOX_SECRET) {
+      json(res, 401, { error: 'Unauthorized' })
+      return
+    }
+
     let body = ''
     for await (const chunk of req) body += chunk
 
@@ -189,6 +198,12 @@ const server = createServer(async (req, res) => {
   // Sync endpoint — allows git/mkdir/find for repo cloning (write operations).
   // Only the web service uses this; the AI agent's /run stays read-only.
   if (req.method === 'POST' && url.pathname === '/sync-run') {
+    // Verify shared secret if configured
+    if (SANDBOX_SECRET && req.headers['x-sandbox-key'] !== SANDBOX_SECRET) {
+      json(res, 401, { error: 'Unauthorized' })
+      return
+    }
+
     let body = ''
     for await (const chunk of req) body += chunk
 

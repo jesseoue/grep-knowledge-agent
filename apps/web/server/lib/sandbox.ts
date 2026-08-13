@@ -29,6 +29,10 @@ export async function executeInSandbox(options: ShellExecuteOptions): Promise<{
   results: CommandResult[]
 }> {
   const sandboxUrl = (process.env.SANDBOX_URL || DEFAULT_SANDBOX_URL).replace(/\/$/, '')
+  const sandboxSecret = process.env.SANDBOX_SECRET || ''
+
+  const reqHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (sandboxSecret) reqHeaders['X-Sandbox-Key'] = sandboxSecret
 
   for (const command of options.commands) {
     const validation = validateShellCommand(command, {
@@ -57,7 +61,7 @@ export async function executeInSandbox(options: ShellExecuteOptions): Promise<{
     try {
       const response = await fetch(`${sandboxUrl}/run`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: reqHeaders,
         body,
         signal: AbortSignal.timeout(30_000),
       })

@@ -105,7 +105,6 @@ export default defineEventHandler(async (event) => {
 })
 
 async function syncRepoToSandbox(repo: string, branch: string, contentPath?: string) {
-  const sandboxUrl = (process.env.SANDBOX_URL || 'http://sandbox.railway.internal:3200').replace(/\/$/, '')
   const target = contentPath ? `${contentPath}` : '.'
   const safeDir = repo.split('/').join('_')
 
@@ -122,9 +121,15 @@ async function syncRepoToSandbox(repo: string, branch: string, contentPath?: str
     `find /snapshot/gh/${safeDir} -type d -empty -delete`,
   ]
 
+  const sandboxUrl = (process.env.SANDBOX_URL || 'http://sandbox.railway.internal:3200').replace(/\/$/, '')
+  const sandboxSecret = process.env.SANDBOX_SECRET || ''
+
+  const reqHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (sandboxSecret) reqHeaders['X-Sandbox-Key'] = sandboxSecret
+
   const response = await fetch(`${sandboxUrl}/sync-run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: reqHeaders,
     body: JSON.stringify({ commands }),
     signal: AbortSignal.timeout(120_000),
   })
