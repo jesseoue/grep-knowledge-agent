@@ -43,7 +43,8 @@ COPY --from=base /app/node_modules ./node_modules
 # Run as non-root user for security (node image provides the "node" user)
 USER node
 
-EXPOSE 3000
+# Railway injects $PORT (default 8080) at runtime. EXPOSE is informational only.
+EXPOSE 8080
 
 # Lightweight healthcheck using Node (no curl needed in slim image).
 # Uses process.env.PORT (Railway-injected) or 3000 as a local fallback.

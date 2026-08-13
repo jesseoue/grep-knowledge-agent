@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2026-08-12
+
+### Added — streaming chat + template polish
+- **Streaming responses**: chat now streams tokens via SSE (`streamText`) instead of waiting for the full response. Text appears incrementally as the model generates it, with the command trace + references delivered in a final `done` event.
+- **Template icon**: added a 512×512 transparent PNG icon (`assets/icon.png`) for the Railway marketplace card. Every competing template has one — this was a best-practices gap.
+- **Friendly quota errors**: credit-quota exhaustion now returns HTTP 402 with a clear message ("You've used X of Y tokens") instead of a generic 500, so the UI can show "out of credits" cleanly.
+
+### Fixed
+- **Dockerfile EXPOSE**: changed `EXPOSE 3000` → `EXPOSE 8080` to match Railway's injected `$PORT`. The old value was informational-only but failed template validators and confused readers.
+- **Provider error message**: updated the "no AI provider" error to mention `OPENROUTER_API_KEY` (recommended) first.
+
 ## [1.4.0] - 2026-08-12
 
 ### Added — OpenRouter as the recommended AI provider

@@ -55,31 +55,66 @@ async function sendMessage() {
   message.value = ''
   loading.value = true
 
+  // Push an empty assistant message that we'll fill as tokens stream in.
+  const assistantMsg = ref<ChatMsg>({ role: 'assistant', content: '' })
+  messages.value.push(assistantMsg.value)
+
   try {
     const res = await fetch('/api/chats', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: messages.value }),
+      body: JSON.stringify({ messages: messages.value.filter(m => m !== assistantMsg.value) }),
     })
 
     if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.message || 'Request failed')
+      let why = 'Request failed'
+      try {
+        const err = await res.json()
+        why = err.data?.why || err.statusMessage || err.message || why
+      } catch {}
+      throw new Error(why)
     }
 
-    const data = await res.json()
-    messages.value.push({
-      role: 'assistant',
-      content: data.text,
-      references: data.references,
-      trace: data.trace,
-    })
-    lastUsage.value = data.usage || null
+    // Read the SSE stream manually — each `data:` line is a JSON event.
+    const reader = res.body!.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+
+      // SSE events are separated by \n\n
+      let idx
+      while ((idx = buffer.indexOf('\n\n')) !== -1) {
+        const raw = buffer.slice(0, idx).trim()
+        buffer = buffer.slice(idx + 2)
+        if (!raw.startsWith('data: ')) continue
+        const data = JSON.parse(raw.slice(6))
+
+        if (data.type === 'text') {
+          assistantMsg.value.content += data.delta
+          await nextTick()
+          chatScroll.value?.scrollTo({ top: chatScroll.value.scrollHeight, behavior: 'smooth' })
+        } else if (data.type === 'done') {
+          // Replace with the final assembled text + metadata
+          assistantMsg.value.content = data.text || assistantMsg.value.content
+          assistantMsg.value.references = data.references
+          assistantMsg.value.trace = data.trace
+          lastUsage.value = data.usage || null
+        } else if (data.type === 'error') {
+          throw new Error(data.message || 'Agent stream failed')
+        }
+      }
+    }
   } catch (error) {
-    messages.value.push({
-      role: 'assistant',
-      content: `⚠️ ${error instanceof Error ? error.message : 'Something went wrong'}`,
-    })
+    // If we streamed partial text, append the error; otherwise replace the empty msg
+    if (assistantMsg.value.content) {
+      assistantMsg.value.content += `\n\n⚠️ ${error instanceof Error ? error.message : 'Something went wrong'}`
+    } else {
+      assistantMsg.value.content = `⚠️ ${error instanceof Error ? error.message : 'Something went wrong'}`
+    }
   } finally {
     loading.value = false
     await nextTick()

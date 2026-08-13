@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a0a0b"/>
+      <stop offset="1" stop-color="#131316"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- Terminal window chrome -->
+  <rect x="88" y="120" width="336" height="272" rx="20" fill="#0d0d10" stroke="#27272a" stroke-width="2"/>
+
+  <!-- Title bar dots -->
+  <circle cx="116" cy="148" r="7" fill="#ef4444" opacity="0.85"/>
+  <circle cx="140" cy="148" r="7" fill="#fbbf24" opacity="0.85"/>
+  <circle cx="164" cy="148" r="7" fill="#4ade80" opacity="0.85"/>
+
+  <!-- Prompt symbol o -->
+  <text x="128" y="248" font-family="'JetBrains Mono','SF Mono',Menlo,monospace" font-size="64" font-weight="700" fill="url(#amber)" filter="url(#glow)">o</text>
+
+  <!-- grep text -->
+  <text x="192" y="248" font-family="'JetBrains Mono','SF Mono',Menlo,monospace" font-size="56" font-weight="600" fill="#e4e4e7">grep</text>
+
+  <!-- Cursor block -->
+  <rect x="356" y="206" width="28" height="52" rx="4" fill="#fbbf24" opacity="0.9">
+    <animate attributeName="opacity" values="0.9;0.15;0.9" dur="1.2s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Subtitle line -->
+  <text x="128" y="300" font-family="'JetBrains Mono','SF Mono',Menlo,monospace" font-size="22" fill="#52525b">--files</text>
+  <text x="232" y="300" font-family="'JetBrains Mono','SF Mono',Menlo,monospace" font-size="22" fill="#a1a1aa">--no-vectors</text>
+
+  <!-- Bottom accent line -->
+  <rect x="128" y="340" width="200" height="3" rx="1.5" fill="#27272a"/>
+  <rect x="128" y="340" width="64" height="3" rx="1.5" fill="#fbbf24" opacity="0.8"/>
+</svg>

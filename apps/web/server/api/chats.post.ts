@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { generateText, stepCountIs } from 'ai'
+import { streamText, stepCountIs } from 'ai'
 import { createSavoir } from '@grep/sdk'
 import { routeQuestion, buildChatSystemPrompt } from '@grep/agent'
 import { getAgentConfig } from '../lib/agent-config'
@@ -74,15 +74,16 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Credit quota — block if the user exceeded their token budget
+  // Credit quota — block if the user exceeded their token budget.
+  // Returns a friendly error so the UI can show "out of credits" instead of a 500.
   const quota = await checkQuota(session.user.id)
   if (!quota.allowed) {
     throw createError({
-      statusCode: 429,
-      statusMessage: 'Quota exceeded',
+      statusCode: 402,
+      statusMessage: 'Credit quota exceeded',
       data: {
-        why: `You've used ${quota.summary.totalTokens} of ${quota.summary.quota} tokens.`,
-        fix: 'Upgrade your plan or wait for your quota to reset.',
+        why: `You've used ${quota.summary.totalTokens.toLocaleString()} of ${quota.summary.quota?.toLocaleString()} tokens.`,
+        fix: 'Upgrade your plan or contact an admin to increase your quota.',
       },
     })
   }
@@ -92,7 +93,7 @@ export default defineEventHandler(async (event) => {
       statusCode: 500,
       statusMessage: 'No AI provider configured',
       data: {
-        why: 'Set at least one of OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_GENERATIVE_AI_API_KEY.',
+        why: 'Set at least one of OPENROUTER_API_KEY (recommended), OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_GENERATIVE_AI_API_KEY.',
         fix: 'Add an API key in Railway project variables. See docs/ENVIRONMENT.md for instructions.',
       },
     })
@@ -125,8 +126,21 @@ export default defineEventHandler(async (event) => {
     'Read the most relevant files fully before answering.',
   ].join('\n')
 
+  // Stream the response as SSE. Each event is either:
+  //   data: {"type":"text","delta":"..."}     — incremental text
+  //   data: {"type":"done","text":...,"references":[...],"trace":[...],"usage":{...}}
+  // This keeps the command-trace + references features while streaming tokens.
+  setHeader(event, 'content-type', 'text/event-stream; charset=utf-8')
+  setHeader(event, 'cache-control', 'no-cache, no-transform')
+  setHeader(event, 'connection', 'keep-alive')
+
+  const send = (data: Record<string, unknown>) => {
+    event.node.res.write(`data: ${JSON.stringify(data)}\n\n`)
+  }
+
+  let result
   try {
-    const { text, steps, usage, finishReason } = await generateText({
+    result = streamText({
       model: mainModel,
       system: buildChatSystemPrompt({
         ...agentConfig,
@@ -139,71 +153,13 @@ export default defineEventHandler(async (event) => {
       },
       stopWhen: stepCountIs(routerConfig.maxSteps),
       temperature: agentConfig.temperature ?? 0.7,
-      // Propagate the request abort signal so disconnecting stops the model
-      // from generating (and billing) in the background.
       abortSignal: AbortSignal.timeout(120_000), // 2 min cap
+      onError: ({ error }) => {
+        console.error('[chat] stream error', error)
+        send({ type: 'error', message: error instanceof Error ? error.message : 'Agent stream failed' })
+      },
     })
-
-    // Log total usage for cost attribution
-    if (usage) {
-      console.log('[chat] total usage', {
-        userId: session.user.id,
-        complexity: routerConfig.complexity,
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-        totalTokens: usage.totalTokens,
-        steps: steps?.length || 0,
-        finishReason,
-      })
-
-      // Persist usage to the credit ledger (best-effort — never blocks the reply)
-      await recordUsage(session.user.id, {
-        complexity: routerConfig.complexity,
-        inputTokens: usage.inputTokens ?? 0,
-        outputTokens: usage.outputTokens ?? 0,
-        totalTokens: usage.totalTokens ?? 0,
-      })
-    }
-
-    const references = Array.from(new Set(
-      (steps || []).flatMap((s: any) => {
-        const toolCalls = s.toolCalls || []
-        return toolCalls.flatMap((tc: any) => {
-          const args = tc.args as any
-          const commands = args?.commands || (args?.command ? [args.command] : [])
-          return commands.flatMap((cmd: string) => {
-            const matches = cmd.match(/(?:cat|head|grep -rl|grep -r)\s+([^\s|]+)/g) || []
-            return matches.map((m) => m.split(/\s+/).pop()!.split('/').pop()!)
-          })
-        })
-      })
-    )).slice(0, 8)
-
-    // Extract the command trace — every shell command the agent ran.
-    // Powers the "command trace" panel in the UI (no black box).
-    const trace = (steps || []).flatMap((s: any) => {
-      const toolCalls = s.toolCalls || []
-      return toolCalls.flatMap((tc: any) => {
-        const args = tc.args as any
-        const commands = args?.commands || (args?.command ? [args.command] : [])
-        return commands.map((cmd: string) => ({ cmd, tool: tc.toolName || 'bash' }))
-      })
-    })
-
-    return {
-      text,
-      references,
-      trace,
-      usage: usage ? { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, totalTokens: usage.totalTokens } : undefined,
-    }
   } catch (error: any) {
-    // Don't log abort errors — they're expected when users disconnect
-    if (error?.name === 'AbortError') {
-      throw createError({
-        statusCode: 499,
-        statusMessage: 'Request cancelled',
-      })
-    }
     console.error('[chat]', error)
     throw createError({
       statusCode: 502,
@@ -214,4 +170,77 @@ export default defineEventHandler(async (event) => {
       },
     })
   }
+
+  // Stream text deltas as they arrive
+  for await (const part of result.fullStream) {
+    if (part.type === 'text-delta') {
+      send({ type: 'text', delta: part.text })
+    }
+    // Tool calls are visible in fullStream but we don't stream them live;
+    // they're collected into the trace at the end via onFinish.
+  }
+
+  // Collect final results (text, steps/trace, usage) once the stream completes
+  const [finalText, steps, usage] = await Promise.all([
+    result.text,
+    result.steps,
+    result.totalUsage,
+  ])
+
+  // Extract file references from the commands the agent ran
+  const references = Array.from(new Set(
+    (steps || []).flatMap((s: any) => {
+      const toolCalls = s.toolCalls || []
+      return toolCalls.flatMap((tc: any) => {
+        const args = tc.args as any
+        const commands = args?.commands || (args?.command ? [args.command] : [])
+        return commands.flatMap((cmd: string) => {
+          const matches = cmd.match(/(?:cat|head|grep -rl|grep -r)\s+([^\s|]+)/g) || []
+          return matches.map((m) => m.split(/\s+/).pop()!.split('/').pop()!)
+        })
+      })
+    })
+  )).slice(0, 8)
+
+  // Extract the command trace — every shell command the agent ran.
+  const trace = (steps || []).flatMap((s: any) => {
+    const toolCalls = s.toolCalls || []
+    return toolCalls.flatMap((tc: any) => {
+      const args = tc.args as any
+      const commands = args?.commands || (args?.command ? [args.command] : [])
+      return commands.map((cmd: string) => ({ cmd, tool: tc.toolName || 'bash' }))
+    })
+  })
+
+  // Persist usage to the credit ledger (best-effort — never blocks the reply)
+  if (usage) {
+    console.log('[chat] total usage', {
+      userId: session.user.id,
+      complexity: routerConfig.complexity,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      totalTokens: usage.totalTokens,
+      steps: steps?.length || 0,
+    })
+    recordUsage(session.user.id, {
+      complexity: routerConfig.complexity,
+      inputTokens: usage.inputTokens ?? 0,
+      outputTokens: usage.outputTokens ?? 0,
+      totalTokens: usage.totalTokens ?? 0,
+    }).catch(() => {})
+  }
+
+  send({
+    type: 'done',
+    text: finalText,
+    references,
+    trace,
+    usage: usage ? {
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      totalTokens: usage.totalTokens,
+    } : undefined,
+  })
+
+  event.node.res.end()
 })
