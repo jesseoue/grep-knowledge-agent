@@ -60,6 +60,12 @@ function createAuth() {
     baseURL,
     database: drizzleAdapter(db, {
       provider: 'pg',
+      // Our schema tables are named in the plural (users, sessions, accounts,
+      // verifications). Better Auth's default model names are singular, so we
+      // tell the adapter to map plural table names — otherwise it can't find
+      // the "user" model and login/signup fails with
+      // "The model \"user\" was not found in the schema object".
+      usePlural: true,
     }),
     socialProviders: {
       github: {
