@@ -63,7 +63,7 @@ Railway is a singular platform to deploy your infrastructure stack. Railway will
 - **No embeddings. No chunking. No vector DB.** A filesystem, `bash`, and an LLM.
 - **Provider-agnostic complexity router** — classifies each question and routes to the cheapest model tier from *whatever provider you configured* (any single key works). **OpenRouter preferred** — one key unlocks every vendor's models: trivial → `openai/gpt-5.6-luna`/`claude-haiku-4-5`, moderate → `openai/gpt-5.6-terra`/`claude-sonnet-4-6`, complex → `openai/gpt-5.6-sol`/`claude-opus-4-8`.
 - **Deterministic, explainable retrieval** — every answer cites the files it read, and the full command trace is in the UI.
-- **GitHub sources** — point it at any public repo and it clones the docs into a searchable snapshot.
+- **GitHub sources** — point it at any public repo and it clones the docs into a searchable snapshot. Or click **try the demo** for an instant pre-configured source.
 - **Bring-your-own-key** — no AI gateway lock-in. Use OpenAI, Anthropic, Google Gemini, or all three.
 - **Authentication** — GitHub OAuth + email/password (Better Auth).
 - **Auto-migration** — database tables are created automatically on first deploy.
@@ -110,8 +110,8 @@ The template provisions everything: **web service** (Nuxt 4 + Nitro, auto-genera
 
    See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for detailed instructions.
 
-2. **Open your app → create an account (email + password) → sign in → add a source**:
-   Settings → **Add GitHub source** → enter `owner/repo` (e.g. `vercel-labs/knowledge-agent-template`) → **Sync**. Then ask it anything.
+2. **Open your app → create an account (email + password) → sign in → try the demo**:
+   On first sign-in, click **Settings** → **try the demo** to add a pre-configured source (the original template's docs) and sync it automatically. Then ask it anything. Or add your own repo via **Add GitHub source**.
 
 > Email/password sign-up works out-of-the-box with **zero extra setup**. GitHub OAuth is optional —
 > it only appears on the login page once you set `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
