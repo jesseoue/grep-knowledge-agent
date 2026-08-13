@@ -96,20 +96,25 @@ The template provisions everything:
 - **PostgreSQL** → `DATABASE_URL`
 - **Redis** → `REDIS_URL`
 
-### After Deploy (3 steps)
+### After Deploy (just 2 steps to start chatting)
 
-1. **Set an AI provider key** — at least one of:
+The template provisions everything: **web service** (Nuxt 4 + Nitro, auto-generated
+`BETTER_AUTH_SECRET`), **sandbox service** with a snapshot volume at `/snapshot`,
+**PostgreSQL** (`DATABASE_URL`), and **Redis** (`REDIS_URL`).
+
+1. **Set one AI provider key** (bring your own — any one works):
    - `OPENAI_API_KEY` → [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
    - `ANTHROPIC_API_KEY` → [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
    - `GOOGLE_GENERATIVE_AI_API_KEY` → [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
 
    See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for detailed instructions.
 
-2. **Create a GitHub OAuth app** (Settings → Developer settings → OAuth Apps) with callback URL `https://<your-app>.up.railway.app/api/auth/callback/github` — set `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
+2. **Open your app → create an account (email + password) → sign in → add a source**:
+   Settings → **Add GitHub source** → enter `owner/repo` (e.g. `vercel-labs/knowledge-agent-template`) → **Sync**. Then ask it anything.
 
-3. Open your app → sign in → **Settings → Add GitHub source** → enter `owner/repo` (e.g. `vercel-labs/knowledge-agent-template`) → **Sync**
-
-4. Ask it anything about your repo. It answers with `grep`, not vectors.
+> Email/password sign-up works out-of-the-box with **zero extra setup**. GitHub OAuth is optional —
+> it only appears on the login page once you set `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
+> ([setup guide](docs/ENVIRONMENT.md#setting-up-github-oauth)).
 
 ### Local Development
 
@@ -145,11 +150,11 @@ bun run dev
 | `BETTER_AUTH_SECRET` | ✅ (auto-generated on Railway) | Session signing secret. Auto-generates a runtime fallback if unset (sessions reset on redeploy). |
 | `DATABASE_URL` | ✅ (Railway Postgres) | Postgres connection string |
 | `REDIS_URL` | ✅ (Railway Redis) | Redis for sessions/rate limits/jobs |
-| `GITHUB_CLIENT_ID` | ✅ | GitHub OAuth app client ID |
-| `GITHUB_CLIENT_SECRET` | ✅ | GitHub OAuth app client secret |
 | `OPENAI_API_KEY` | ✅ (one of three) | OpenAI API key |
 | `ANTHROPIC_API_KEY` | ✅ (one of three) | Anthropic API key |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ (one of three) | Google Gemini API key |
+| `GITHUB_CLIENT_ID` | optional | GitHub OAuth client ID (enables "Continue with GitHub" on login) |
+| `GITHUB_CLIENT_SECRET` | optional | GitHub OAuth client secret |
 | `SNAPSHOT_REPO` | optional | Default `owner/repo` to seed on first run |
 | `PUBLIC_SITE_URL` | optional | Your public app URL (for auth). Auto-detected from Railway on deploy. |
 

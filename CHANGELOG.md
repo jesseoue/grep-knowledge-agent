@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2026-08-12
+
+### One-click simplicity
+- **Password-first auth**: email/password is now the primary login (works with zero setup on a fresh deploy). "Continue with GitHub" is secondary and only appears when `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` are actually configured (via a new `GET /api/auth/config` endpoint).
+- **Docs updated**: README "After Deploy" is now a clean 2-step flow (set one AI key → sign up + add a source). GitHub OAuth documented as optional.
+
 ## [1.3.0] - 2026-08-12
 
 ### Fixed — critical runtime bugs

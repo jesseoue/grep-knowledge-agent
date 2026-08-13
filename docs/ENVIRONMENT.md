@@ -9,8 +9,6 @@ All configuration is done via environment variables. On Railway these are set pe
 | `BETTER_AUTH_SECRET` | `openssl rand -hex 32` | Session signing secret. **Never commit a real value.** On Railway, use `${{secret()}}` to auto-generate. If unset, the app generates an ephemeral runtime secret (sessions reset on redeploy). |
 | `DATABASE_URL` | `postgresql://...` | PostgreSQL connection string (provided by Railway Postgres plugin). |
 | `REDIS_URL` | `redis://default:...` | Redis connection string (provided by Railway Redis plugin). |
-| `GITHUB_CLIENT_ID` | `Iv1.abc123` | GitHub OAuth app client ID. |
-| `GITHUB_CLIENT_SECRET` | `abc123...` | GitHub OAuth app client secret. |
 
 > At least **one** AI provider key is required:
 
@@ -33,6 +31,8 @@ model per question difficulty from that provider.
 | `SANDBOX_URL` | `http://sandbox.railway.internal:3200` | Private hostname of the sandbox service. |
 | `PUBLIC_SITE_URL` | — | Your public app URL (used for auth trusted origins). |
 | `MAX_TOKENS_PER_USER` | `0` (unlimited) | Credit quota — max tokens a user may consume (all-time). Set to cap free usage and bill against credits. |
+| `GITHUB_CLIENT_ID` | — | GitHub OAuth client ID. **Optional** — enables "Continue with GitHub" on the login page. Email/password works without it. |
+| `GITHUB_CLIENT_SECRET` | — | GitHub OAuth client secret. Optional, paired with the client ID. |
 
 ---
 

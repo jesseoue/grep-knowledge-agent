@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { signIn, signUp } from '~/lib/auth-client'
 
 const mode = ref<'signin' | 'signup'>('signin')
@@ -8,7 +8,20 @@ const password = ref('')
 const name = ref('')
 const loading = ref(false)
 const githubLoading = ref(false)
+const githubEnabled = ref(false)
 const error = ref('')
+
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/auth/config')
+    if (res.ok) {
+      const data = await res.json()
+      githubEnabled.value = !!data.githubEnabled
+    }
+  } catch {
+    githubEnabled.value = false
+  }
+})
 
 async function submit() {
   error.value = ''
@@ -107,25 +120,6 @@ async function githubLogin() {
             <div class="p-6">
               <UAlert v-if="error" type="error" :title="error" class="mb-4" icon="i-lucide-triangle-alert" />
 
-              <!-- GitHub OAuth -->
-              <UButton
-                block
-                color="neutral"
-                variant="outline"
-                icon="i-lucide-github"
-                :loading="githubLoading"
-                class="!border-zinc-700 !bg-transparent !text-zinc-200 hover:!bg-zinc-900"
-                @click="githubLogin"
-              >
-                Continue with GitHub
-              </UButton>
-
-              <div class="my-5 flex items-center gap-3 text-[11px] text-zinc-600">
-                <div class="h-px flex-1 bg-zinc-800"></div>
-                or continue with email
-                <div class="h-px flex-1 bg-zinc-800"></div>
-              </div>
-
               <!-- Mode toggle -->
               <div class="mb-5 grid grid-cols-2 gap-1 rounded-lg border border-zinc-800 bg-zinc-950 p-1 font-mono text-[12px]">
                 <button
@@ -146,7 +140,7 @@ async function githubLogin() {
                 </button>
               </div>
 
-              <!-- Email / Password form -->
+              <!-- Email / Password form (primary — works with no extra config) -->
               <form class="space-y-4" @submit.prevent="submit">
                 <div v-if="mode === 'signup'">
                   <label class="mb-1.5 block font-mono text-[11px] text-zinc-500">name</label>
@@ -171,6 +165,26 @@ async function githubLogin() {
                   {{ mode === 'signin' ? '$ ./auth --signin' : '$ ./auth --register' }}
                 </UButton>
               </form>
+
+              <!-- GitHub OAuth — only shown when credentials are configured -->
+              <template v-if="githubEnabled">
+                <div class="my-5 flex items-center gap-3 text-[11px] text-zinc-600">
+                  <div class="h-px flex-1 bg-zinc-800"></div>
+                  or
+                  <div class="h-px flex-1 bg-zinc-800"></div>
+                </div>
+                <UButton
+                  block
+                  color="neutral"
+                  variant="outline"
+                  icon="i-lucide-github"
+                  :loading="githubLoading"
+                  class="!border-zinc-700 !bg-transparent !text-zinc-200 hover:!bg-zinc-900"
+                  @click="githubLogin"
+                >
+                  Continue with GitHub
+                </UButton>
+              </template>
             </div>
           </div>
 
