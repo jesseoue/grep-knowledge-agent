@@ -11,4 +11,4 @@ export {
   resolveModelId,
 } from './models'
 export type { ModelAlias, ModelTier, Complexity, Provider } from './models'
-export type { AgentConfigData, RoutingResult, AgentCallOptions, AgentExecutionContext } from './types'
+export type { AgentConfigData, RoutingResult } from './types'
