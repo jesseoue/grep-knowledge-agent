@@ -22,8 +22,6 @@ const quotaExceeded = ref(false)
 const rateLimited = ref(false)
 const copiedIdx = ref<number | null>(null)
 
-const session = authClient.useSession()
-
 // Clickable example prompts shown on the empty state
 const examplePrompts = [
   'How do I configure rate limiting?',
@@ -184,22 +182,25 @@ async function sendMessage() {
         </div>
       </div>
       <div class="flex items-center gap-3">
-        <span v-if="sources" class="hidden items-center gap-1.5 font-mono text-[11px] text-zinc-500 sm:flex">
-          <span class="inline-block h-1.5 w-1.5 rounded-full bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.4)]" />
-          {{ sources.total }} sources
-          <span v-if="sources.snapshotRepo" class="text-zinc-600">· {{ sources.snapshotRepo }}</span>
-        </span>
-        <UButton
-          v-if="messages.length > 0"
-          icon="i-lucide-eraser"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          class="!text-zinc-400 hover:!text-zinc-100"
-          @click="clearChat"
-        >
-          clear
-        </UButton>
+        <!-- Session-dependent buttons wrapped in ClientOnly to prevent hydration mismatch -->
+        <ClientOnly>
+          <span v-if="sources" class="hidden items-center gap-1.5 font-mono text-[11px] text-zinc-500 sm:flex">
+            <span class="inline-block h-1.5 w-1.5 rounded-full bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.4)]" />
+            {{ sources.total }} sources
+            <span v-if="sources.snapshotRepo" class="text-zinc-600">· {{ sources.snapshotRepo }}</span>
+          </span>
+          <UButton
+            v-if="messages.length > 0"
+            icon="i-lucide-eraser"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            class="!text-zinc-400 hover:!text-zinc-100"
+            @click="clearChat"
+          >
+            clear
+          </UButton>
+        </ClientOnly>
         <UButton
           to="/settings"
           icon="i-lucide-terminal-square"
@@ -234,20 +235,22 @@ async function sendMessage() {
     </header>
 
     <!-- Quota exceeded banner -->
-    <div v-if="quotaExceeded" class="flex items-center justify-between border-b border-amber-400/30 bg-amber-400/10 px-5 py-2">
-      <p class="font-mono text-[11px] text-amber-300">
-        ⚠️ Credit quota exceeded — contact an admin to increase your limit.
-      </p>
-      <button class="font-mono text-[11px] text-amber-400 hover:text-amber-200" @click="quotaExceeded = false">dismiss</button>
-    </div>
+    <ClientOnly>
+      <div v-if="quotaExceeded" class="flex items-center justify-between border-b border-amber-400/30 bg-amber-400/10 px-5 py-2">
+        <p class="font-mono text-[11px] text-amber-300">
+          ⚠️ Credit quota exceeded — contact an admin to increase your limit.
+        </p>
+        <button class="font-mono text-[11px] text-amber-400 hover:text-amber-200" @click="quotaExceeded = false">dismiss</button>
+      </div>
 
-    <!-- Rate limit notice -->
-    <div v-if="rateLimited" class="flex items-center justify-between border-b border-cyan-400/30 bg-cyan-400/10 px-5 py-2">
-      <p class="font-mono text-[11px] text-cyan-300">
-        ⏱ Slow down — too many requests. Wait a moment and try again.
-      </p>
-      <button class="font-mono text-[11px] text-cyan-400 hover:text-cyan-200" @click="rateLimited = false">dismiss</button>
-    </div>
+      <!-- Rate limit notice -->
+      <div v-if="rateLimited" class="flex items-center justify-between border-b border-cyan-400/30 bg-cyan-400/10 px-5 py-2">
+        <p class="font-mono text-[11px] text-cyan-300">
+          ⏱ Slow down — too many requests. Wait a moment and try again.
+        </p>
+        <button class="font-mono text-[11px] text-cyan-400 hover:text-cyan-200" @click="rateLimited = false">dismiss</button>
+      </div>
+    </ClientOnly>
 
     <!-- Body -->
     <div class="flex flex-1 overflow-hidden">
@@ -279,13 +282,15 @@ async function sendMessage() {
                   >
                     <span class="text-zinc-600">  ❯</span> "{{ p }}"
                   </button>
-                  <button
-                    v-if="sources && sources.total === 0"
-                    class="mt-4 inline-flex items-center gap-1.5 rounded border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 font-mono text-[12px] text-amber-300 transition hover:bg-amber-400/20"
-                    @click="navigateTo('/settings')"
-                  >
-                    ⚡ no sources yet — add one in settings
-                  </button>
+                  <ClientOnly>
+                    <button
+                      v-if="sources && sources.total === 0"
+                      class="mt-4 inline-flex items-center gap-1.5 rounded border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 font-mono text-[12px] text-amber-300 transition hover:bg-amber-400/20"
+                      @click="navigateTo('/settings')"
+                    >
+                      ⚡ no sources yet — add one in settings
+                    </button>
+                  </ClientOnly>
                 </div>
               </div>
             </div>
@@ -332,15 +337,17 @@ async function sendMessage() {
             <span class="text-amber-400">❯</span> command trace
           </p>
           <p class="mt-0.5 font-mono text-[10px] text-zinc-600">every shell command the agent ran</p>
-          <!-- Source indicator -->
-          <div v-if="sources && sources.total > 0" class="mt-2 flex flex-wrap gap-1">
-            <span class="rounded border border-zinc-700/50 bg-zinc-800/50 px-1.5 py-0.5 font-mono text-[9px] text-zinc-400">
-              {{ sources.total }} source{{ sources.total > 1 ? 's' : '' }}
-            </span>
-            <span v-if="sources.snapshotRepo" class="rounded border border-amber-400/20 bg-amber-400/5 px-1.5 py-0.5 font-mono text-[9px] text-amber-300/80">
-              {{ sources.snapshotRepo }}
-            </span>
-          </div>
+          <!-- Source indicator (client-only — sources load via fetch) -->
+          <ClientOnly>
+            <div v-if="sources && sources.total > 0" class="mt-2 flex flex-wrap gap-1">
+              <span class="rounded border border-zinc-700/50 bg-zinc-800/50 px-1.5 py-0.5 font-mono text-[9px] text-zinc-400">
+                {{ sources.total }} source{{ sources.total > 1 ? 's' : '' }}
+              </span>
+              <span v-if="sources.snapshotRepo" class="rounded border border-amber-400/20 bg-amber-400/5 px-1.5 py-0.5 font-mono text-[9px] text-amber-300/80">
+                {{ sources.snapshotRepo }}
+              </span>
+            </div>
+          </ClientOnly>
         </div>
         <div class="space-y-3 p-4">
           <template v-if="messages.some(m => m.trace?.length)">
@@ -365,23 +372,25 @@ async function sendMessage() {
           </div>
 
           <!-- Usage footer -->
-          <div v-if="lastUsage" class="mt-4 border-t border-zinc-800 pt-3">
-            <p class="font-mono text-[10px] text-zinc-600">tokens used</p>
-            <p class="mt-1 font-mono text-[11px] text-zinc-400">
-              {{ lastUsage.totalTokens?.toLocaleString() || '—' }} total
-            </p>
-          </div>
+          <ClientOnly>
+            <div v-if="lastUsage" class="mt-4 border-t border-zinc-800 pt-3">
+              <p class="font-mono text-[10px] text-zinc-600">tokens used</p>
+              <p class="mt-1 font-mono text-[11px] text-zinc-400">
+                {{ lastUsage.totalTokens?.toLocaleString() || '—' }} total
+              </p>
+            </div>
 
-          <!-- Credit / quota meter -->
-          <div v-if="usageSummary" class="mt-4 border-t border-zinc-800 pt-3">
-            <p class="font-mono text-[10px] text-zinc-600">
-              credits
-              <span v-if="usageSummary.quota">· {{ usageSummary.remaining?.toLocaleString() }} of {{ usageSummary.quota.toLocaleString() }} left</span>
-            </p>
-            <p class="mt-1 font-mono text-[11px] text-zinc-400">
-              {{ usageSummary.totalTokens.toLocaleString() }} tokens · {{ usageSummary.totalRequests }} requests
-            </p>
-          </div>
+            <!-- Credit / quota meter -->
+            <div v-if="usageSummary" class="mt-4 border-t border-zinc-800 pt-3">
+              <p class="font-mono text-[10px] text-zinc-600">
+                credits
+                <span v-if="usageSummary.quota">· {{ usageSummary.remaining?.toLocaleString() }} of {{ usageSummary.quota.toLocaleString() }} left</span>
+              </p>
+              <p class="mt-1 font-mono text-[11px] text-zinc-400">
+                {{ usageSummary.totalTokens.toLocaleString() }} tokens · {{ usageSummary.totalRequests }} requests
+              </p>
+            </div>
+          </ClientOnly>
         </div>
       </aside>
     </div>

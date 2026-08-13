@@ -10,8 +10,8 @@ import { checkQuota, recordUsage } from '../lib/usage'
 const bodySchema = z.object({
   messages: z.array(z.object({
     role: z.enum(['user', 'assistant', 'system']),
-    content: z.string(),
-  })),
+    content: z.string().min(1).max(8000),
+  })).min(1).max(50),
 })
 
 // Rate limiter — uses Redis when available (works across replicas),
@@ -214,14 +214,6 @@ export default defineEventHandler(async (event) => {
 
   // Persist usage to the credit ledger (best-effort — never blocks the reply)
   if (usage) {
-    console.log('[chat] total usage', {
-      userId: session.user.id,
-      complexity: routerConfig.complexity,
-      inputTokens: usage.inputTokens,
-      outputTokens: usage.outputTokens,
-      totalTokens: usage.totalTokens,
-      steps: steps?.length || 0,
-    })
     recordUsage(session.user.id, {
       complexity: routerConfig.complexity,
       inputTokens: usage.inputTokens ?? 0,

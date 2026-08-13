@@ -9,8 +9,6 @@ const loading = ref(false)
 const message = ref('')
 const error = ref('')
 
-const session = authClient.useSession()
-
 async function logout() {
   await authClient.signOut()
   await navigateTo('/login')
@@ -166,7 +164,6 @@ async function addDemoSource() {
             sync all
           </UButton>
           <UButton
-            v-if="session?.data"
             icon="i-lucide-log-out"
             color="neutral"
             variant="ghost"
