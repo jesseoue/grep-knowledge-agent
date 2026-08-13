@@ -121,6 +121,33 @@ async function syncSnapshotRepo() {
     loading.value = false
   }
 }
+
+// One-click demo: add a pre-configured source and sync it immediately.
+async function addDemoSource() {
+  error.value = ''
+  message.value = ''
+  loading.value = true
+  try {
+    const addRes = await fetch('/api/sources/demo', { method: 'POST' })
+    if (!addRes.ok) {
+      const err = await addRes.json().catch(() => null)
+      throw new Error(err?.message || err?.statusMessage || 'Failed to add demo source')
+    }
+    await load()
+    const syncRes = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sources: sources.value.map(s => s.id) }),
+    })
+    const data = await syncRes.json()
+    if (!syncRes.ok) throw new Error(data.message || 'Demo sync failed')
+    message.value = `Demo ready — ask the agent anything about the template docs.`
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Failed to set up demo'
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <template>
@@ -217,7 +244,12 @@ async function syncSnapshotRepo() {
           <div class="p-8 text-center font-mono text-[12px] text-zinc-600">
             <span class="text-zinc-500">$ ls ~/snapshot</span><br />
             <span class="text-zinc-600">ls: no such directory</span><br /><br />
-            add a GitHub repo above or set <code class="rounded bg-zinc-800/80 px-1.5 py-0.5 text-amber-200">SNAPSHOT_REPO</code>
+            add a GitHub repo above, set <code class="rounded bg-zinc-800/80 px-1.5 py-0.5 text-amber-200">SNAPSHOT_REPO</code>,
+            or
+            <button class="text-amber-300 underline decoration-dotted underline-offset-2 hover:text-amber-200" @click="addDemoSource">
+              try the demo
+            </button>
+            <span class="text-zinc-600">(adds a pre-configured source + syncs it)</span>
           </div>
         </div>
         <div v-else class="space-y-2">

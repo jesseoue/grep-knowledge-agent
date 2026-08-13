@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 - **Template icon**: added a 512×512 transparent PNG icon (`assets/icon.png`) for the Railway marketplace card. Every competing template has one — this was a best-practices gap.
 - **Friendly quota errors**: credit-quota exhaustion now returns HTTP 402 with a clear message ("You've used X of Y tokens") instead of a generic 500, so the UI can show "out of credits" cleanly.
 - **Quota-exceeded banner**: the UI now shows a dismissible amber banner when the user hits their token quota, instead of a silent error.
+- **Rate-limit notice**: a transient cyan banner appears when the user sends requests too fast (HTTP 429).
+- **One-click demo source**: a "try the demo" button adds a pre-configured source (`vercel-labs/knowledge-agent-template`) and syncs it automatically — new users can test the agent without typing a repo URL.
 - **Clear chat button**: users can start a fresh conversation with a "clear" button in the header.
 - **Clickable example prompts**: the empty-state examples are now buttons that send the prompt when clicked.
 - **Copy-to-clipboard**: assistant answers have a copy button that appears on hover.

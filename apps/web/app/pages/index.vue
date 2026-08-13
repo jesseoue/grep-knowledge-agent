@@ -19,6 +19,7 @@ const showTrace = ref(false)
 const lastUsage = ref<Usage | null>(null)
 const usageSummary = ref<{ totalTokens: number, totalRequests: number, quota: number | null, remaining: number | null } | null>(null)
 const quotaExceeded = ref(false)
+const rateLimited = ref(false)
 const copiedIdx = ref<number | null>(null)
 
 const session = authClient.useSession()
@@ -112,6 +113,11 @@ async function sendMessage() {
       // Detect quota exhaustion (402) — show persistent banner
       if (statusCode === 402) {
         quotaExceeded.value = true
+      }
+      // Detect rate limiting (429) — show transient notice
+      if (statusCode === 429) {
+        rateLimited.value = true
+        setTimeout(() => { rateLimited.value = false }, 5000)
       }
       throw new Error(why)
     }
@@ -235,6 +241,14 @@ async function sendMessage() {
       <button class="font-mono text-[11px] text-amber-400 hover:text-amber-200" @click="quotaExceeded = false">dismiss</button>
     </div>
 
+    <!-- Rate limit notice -->
+    <div v-if="rateLimited" class="flex items-center justify-between border-b border-cyan-400/30 bg-cyan-400/10 px-5 py-2">
+      <p class="font-mono text-[11px] text-cyan-300">
+        ⏱ Slow down — too many requests. Wait a moment and try again.
+      </p>
+      <button class="font-mono text-[11px] text-cyan-400 hover:text-cyan-200" @click="rateLimited = false">dismiss</button>
+    </div>
+
     <!-- Body -->
     <div class="flex flex-1 overflow-hidden">
       <!-- Chat area -->
@@ -264,6 +278,13 @@ async function sendMessage() {
                     @click="sendExample(p)"
                   >
                     <span class="text-zinc-600">  ❯</span> "{{ p }}"
+                  </button>
+                  <button
+                    v-if="sources && sources.total === 0"
+                    class="mt-4 inline-flex items-center gap-1.5 rounded border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 font-mono text-[12px] text-amber-300 transition hover:bg-amber-400/20"
+                    @click="navigateTo('/settings')"
+                  >
+                    ⚡ no sources yet — add one in settings
                   </button>
                 </div>
               </div>
