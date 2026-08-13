@@ -1,6 +1,61 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
+/* ───────────────────────────────────────────────
+   Self-hosted JetBrains Mono (no external CDN dependency)
+   Served from /public/fonts/ — works offline, no CORS issues,
+   no Google Fonts blocking. Weights: 300, 400, 500, 600, 700 + italic.
+   ─────────────────────────────────────────────── */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-Light.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-Italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-SemiBold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-Bold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-BoldItalic.woff2') format('woff2');
+}
+
 /* ────────────────────────────────────────────────────────────
    GREP KNOWLEDGE AGENT — Terminal Noir
    A CRT / command-line aesthetic, honest to the product:
