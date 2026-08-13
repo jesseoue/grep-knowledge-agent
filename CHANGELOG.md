@@ -8,10 +8,25 @@ All notable changes to this project will be documented in this file.
 - **Streaming responses**: chat now streams tokens via SSE (`streamText`) instead of waiting for the full response. Text appears incrementally as the model generates it, with the command trace + references delivered in a final `done` event.
 - **Template icon**: added a 512×512 transparent PNG icon (`assets/icon.png`) for the Railway marketplace card. Every competing template has one — this was a best-practices gap.
 - **Friendly quota errors**: credit-quota exhaustion now returns HTTP 402 with a clear message ("You've used X of Y tokens") instead of a generic 500, so the UI can show "out of credits" cleanly.
+- **Quota-exceeded banner**: the UI now shows a dismissible amber banner when the user hits their token quota, instead of a silent error.
+- **Clear chat button**: users can start a fresh conversation with a "clear" button in the header.
+- **Clickable example prompts**: the empty-state examples are now buttons that send the prompt when clicked.
+- **Copy-to-clipboard**: assistant answers have a copy button that appears on hover.
+- **Cmd/Ctrl+Enter shortcut**: users can send messages with ⌘+Enter (in addition to Enter).
+- **Multi-source indicator**: the trace sidebar now shows which sources/repos are being searched.
+- **Error page**: added a themed `error.vue` (Terminal Noir 404/500 page) instead of the default Nuxt error.
+- **Sandbox retry/backoff**: the web service now retries sandbox connections up to 3 times with exponential backoff (500ms → 1s → 2s) on cold starts, instead of failing immediately.
+- **robots.txt**: added to allow search engine indexing of the landing page while blocking API routes.
 
 ### Fixed
 - **Dockerfile EXPOSE**: changed `EXPOSE 3000` → `EXPOSE 8080` to match Railway's injected `$PORT`. The old value was informational-only but failed template validators and confused readers.
+- **Sandbox permissions**: the sandbox Dockerfile now runs as root (the container is already isolated via gVisor + read-only command allowlist) and pre-creates `/snapshot/gh`, fixing "Permission denied" on repo sync after fresh deploys.
 - **Provider error message**: updated the "no AI provider" error to mention `OPENROUTER_API_KEY` (recommended) first.
+- **LICENSE**: clarified copyright attribution (year, email, upstream derivation notice).
+
+### Updated
+- **Dependencies**: bumped `ai` (6→7), `@ai-sdk/*` (2→4), `better-auth` (1.5→1.6), `@nuxtjs/mdc` (0.20→0.23) to latest. All typechecks and builds pass.
+- **Favicon**: updated to match the new template icon design.
 
 ## [1.4.0] - 2026-08-12
 

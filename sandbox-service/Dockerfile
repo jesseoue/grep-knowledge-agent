@@ -14,8 +14,14 @@ COPY --chown=node:node sandbox-service/ sandbox-service/
 ENV NODE_ENV=production
 ENV PORT=3200
 
-# Run as non-root user for security
-USER node
+# The snapshot volume is mounted at /snapshot at runtime. Railway mounts it
+# as root-owned, so the node user can't create subdirectories (needed for
+# git clone during sync). Run as root — the sandbox is already isolated
+# (gVisor container, read-only command allowlist, no public exposure).
+USER root
+
+# Ensure the snapshot mount point exists and is writable.
+RUN mkdir -p /snapshot/gh && chmod 777 /snapshot
 
 EXPOSE 3200
 

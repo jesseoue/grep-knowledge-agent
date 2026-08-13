@@ -18,12 +18,48 @@ const chatScroll = ref<HTMLDivElement | null>(null)
 const showTrace = ref(false)
 const lastUsage = ref<Usage | null>(null)
 const usageSummary = ref<{ totalTokens: number, totalRequests: number, quota: number | null, remaining: number | null } | null>(null)
+const quotaExceeded = ref(false)
+const copiedIdx = ref<number | null>(null)
 
 const session = authClient.useSession()
+
+// Clickable example prompts shown on the empty state
+const examplePrompts = [
+  'How do I configure rate limiting?',
+  "What's in the architecture docs?",
+  'Explain the auth flow',
+]
 
 async function logout() {
   await authClient.signOut()
   await navigateTo('/login')
+}
+
+function clearChat() {
+  messages.value = []
+  lastUsage.value = null
+}
+
+function sendExample(prompt: string) {
+  message.value = prompt
+  sendMessage()
+}
+
+async function copyAnswer(idx: number) {
+  const msg = messages.value[idx]
+  if (!msg?.content) return
+  try {
+    await navigator.clipboard.writeText(msg.content)
+    copiedIdx.value = idx
+    setTimeout(() => { copiedIdx.value = null }, 2000)
+  } catch {}
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    e.preventDefault()
+    sendMessage()
+  }
 }
 
 onMounted(async () => {
@@ -68,10 +104,15 @@ async function sendMessage() {
 
     if (!res.ok) {
       let why = 'Request failed'
+      let statusCode = res.status
       try {
         const err = await res.json()
         why = err.data?.why || err.statusMessage || err.message || why
       } catch {}
+      // Detect quota exhaustion (402) — show persistent banner
+      if (statusCode === 402) {
+        quotaExceeded.value = true
+      }
       throw new Error(why)
     }
 
@@ -143,6 +184,17 @@ async function sendMessage() {
           <span v-if="sources.snapshotRepo" class="text-zinc-600">· {{ sources.snapshotRepo }}</span>
         </span>
         <UButton
+          v-if="messages.length > 0"
+          icon="i-lucide-eraser"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          class="!text-zinc-400 hover:!text-zinc-100"
+          @click="clearChat"
+        >
+          clear
+        </UButton>
+        <UButton
           to="/settings"
           icon="i-lucide-terminal-square"
           color="neutral"
@@ -175,6 +227,14 @@ async function sendMessage() {
       </div>
     </header>
 
+    <!-- Quota exceeded banner -->
+    <div v-if="quotaExceeded" class="flex items-center justify-between border-b border-amber-400/30 bg-amber-400/10 px-5 py-2">
+      <p class="font-mono text-[11px] text-amber-300">
+        ⚠️ Credit quota exceeded — contact an admin to increase your limit.
+      </p>
+      <button class="font-mono text-[11px] text-amber-400 hover:text-amber-200" @click="quotaExceeded = false">dismiss</button>
+    </div>
+
     <!-- Body -->
     <div class="flex flex-1 overflow-hidden">
       <!-- Chat area -->
@@ -197,22 +257,37 @@ async function sendMessage() {
                   </p>
                   <p class="mt-1 text-zinc-500">the agent will <span class="text-cyan-300">grep</span>, <span class="text-cyan-300">find</span> &amp; <span class="text-cyan-300">cat</span> your files to answer.</p>
                   <p class="mt-3 text-zinc-500">try:</p>
-                  <p class="mt-1 text-zinc-400">  ❯ "how do I configure rate limiting?"</p>
-                  <p class="text-zinc-400">  ❯ "what's in the architecture docs?"</p>
-                  <p class="text-zinc-400">  ❯ "explain the auth flow"</p>
+                  <button
+                    v-for="p in examplePrompts"
+                    :key="p"
+                    class="mt-1 block text-left font-mono text-[12px] text-zinc-400 transition hover:text-amber-300"
+                    @click="sendExample(p)"
+                  >
+                    <span class="text-zinc-600">  ❯</span> "{{ p }}"
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Messages -->
-          <ChatMessage
-            v-for="(msg, i) in messages"
-            :key="i"
-            :role="msg.role"
-            :content="msg.content"
-            :references="msg.references"
-          />
+          <div v-for="(msg, i) in messages" :key="i" class="group">
+            <ChatMessage
+              :role="msg.role"
+              :content="msg.content"
+              :references="msg.references"
+            />
+            <!-- Copy button on assistant messages (appears on hover) -->
+            <div v-if="msg.role === 'assistant' && msg.content && !loading" class="mt-1 flex justify-start opacity-0 transition group-hover:opacity-100">
+              <button
+                class="flex items-center gap-1 font-mono text-[10px] text-zinc-600 hover:text-zinc-300"
+                @click="copyAnswer(i)"
+              >
+                <span v-if="copiedIdx === i" class="text-green-400">✓ copied</span>
+                <span v-else>⧉ copy</span>
+              </button>
+            </div>
+          </div>
 
           <!-- Loading indicator -->
           <div v-if="loading" class="flex justify-start">
@@ -236,6 +311,15 @@ async function sendMessage() {
             <span class="text-amber-400">❯</span> command trace
           </p>
           <p class="mt-0.5 font-mono text-[10px] text-zinc-600">every shell command the agent ran</p>
+          <!-- Source indicator -->
+          <div v-if="sources && sources.total > 0" class="mt-2 flex flex-wrap gap-1">
+            <span class="rounded border border-zinc-700/50 bg-zinc-800/50 px-1.5 py-0.5 font-mono text-[9px] text-zinc-400">
+              {{ sources.total }} source{{ sources.total > 1 ? 's' : '' }}
+            </span>
+            <span v-if="sources.snapshotRepo" class="rounded border border-amber-400/20 bg-amber-400/5 px-1.5 py-0.5 font-mono text-[9px] text-amber-300/80">
+              {{ sources.snapshotRepo }}
+            </span>
+          </div>
         </div>
         <div class="space-y-3 p-4">
           <template v-if="messages.some(m => m.trace?.length)">
@@ -290,7 +374,8 @@ async function sendMessage() {
           class="flex-1"
           size="lg"
           variant="none"
-          placeholder="ask about your docs…"
+          placeholder="ask about your docs…  (⌘+Enter to send)"
+          @keydown="onKeydown"
           @keyup.enter="sendMessage"
         />
         <UButton

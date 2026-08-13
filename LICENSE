@@ -1,7 +1,9 @@
 MIT License
 
-Copyright (c) 2026 Jesse Ouellette
-Copyright (c) 2026-present Vercel
+Copyright (c) 2026 Jesse Ouellette <jesse@leadmagic.io>
+
+This template is derived from the Vercel knowledge-agent-template.
+Copyright (c) 2026 Vercel, Inc. — see https://github.com/vercel-labs/knowledge-agent-template
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
