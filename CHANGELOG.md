@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.2] - 2026-08-12
+
+### Fixed — one-click login (the critical one)
+- **`usePlural` for the Better Auth Drizzle adapter**: the schema uses plural table names (`users`/`sessions`/`accounts`/`verifications`) but Better Auth's default models are singular. Without `usePlural: true`, every email/password signup and signin returned **500** ("The model \"user\" was not found in the schema object") — the one-click deploy produced an app you couldn't log into.
+- **Migration was closing the shared DB pool**: `plugins/migrate.ts` called `sql.end()` on the app's connection pool after startup migrations, so *every* subsequent DB query (auth, chat, usage) failed with "write CONNECTION_ENDED". Migrations now run on their own short-lived connection that closes itself, leaving the app pool intact.
+- Verified end-to-end on production: register → 200 + token, then sign in (consecutive) → 200 + token, with a secure `HttpOnly`/`Secure` session cookie.
+
 ## [1.3.1] - 2026-08-12
 
 ### One-click simplicity
