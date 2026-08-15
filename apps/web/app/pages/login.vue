@@ -138,7 +138,7 @@ async function githubLogin() {
             <p class="mt-1.5 text-zinc-500"><span class="text-cyan-300">server/api/chat.ts</span><span class="text-zinc-600">:19</span> RATE_LIMIT_WINDOW_S = <span class="text-amber-300">60</span></p>
             <p class="mt-1 text-zinc-500"><span class="text-cyan-300">docs/operations.md</span><span class="text-zinc-600">:42</span> retries after the window resets</p>
             <div class="signal-line my-4 h-px bg-zinc-800" />
-            <p class="text-zinc-300"><span class="text-amber-300">answer</span> Requests are limited to 20/minute per user, with Redis-backed counters and a local fallback.</p>
+            <p class="text-zinc-300"><span class="text-amber-300">answer</span> Requests use Redis-backed per-user rate limits, with a safe local fallback.</p>
             <p class="mt-3 text-zinc-600">sources: <span class="text-cyan-300">chat.ts:19–49</span> · <span class="text-cyan-300">operations.md:42</span></p>
           </div>
         </div>
