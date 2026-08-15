@@ -1,18 +1,27 @@
 import { z } from 'zod'
 import { getDb, schema } from '../../db'
 import { requireUserSession } from '../../lib/session'
+import { branchSchema, contentPathSchema, repoSchema } from '../../lib/source-validation'
 
 const sourceSchema = z.object({
   type: z.enum(['github', 'youtube', 'file']),
-  label: z.string().min(1),
-  basePath: z.string().default('/docs'),
-  repo: z.string().optional(),
-  branch: z.string().default('main'),
-  contentPath: z.string().optional(),
-  outputPath: z.string().optional(),
+  label: z.string().trim().min(1).max(80),
+  basePath: z.string().trim().max(240).default('/docs'),
+  repo: repoSchema.optional(),
+  branch: branchSchema.default('main'),
+  contentPath: contentPathSchema.optional(),
+  outputPath: z.string().trim().max(240).optional(),
   readmeOnly: z.boolean().default(false),
-  channelId: z.string().optional(),
+  channelId: z.string().trim().max(120).optional(),
   maxVideos: z.number().int().default(50),
+}).superRefine((source, context) => {
+  if (source.type === 'github' && !source.repo) {
+    context.addIssue({
+      code: 'custom',
+      path: ['repo'],
+      message: 'Repository is required for a GitHub source',
+    })
+  }
 })
 
 export default defineEventHandler(async (event) => {

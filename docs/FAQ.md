@@ -15,7 +15,7 @@ This agent skips all of that. It gives the LLM a filesystem and `bash`, so it:
 2. Reads the exact file(s) that match
 3. Composes an answer and cites the files
 
-No chunking, no embeddings, no vector DB. The result is deterministic, explainable, and ~75% cheaper.
+No chunking, no embeddings, no vector DB. Retrieval is direct and inspectable: the trace shows which source files were searched and read. Actual AI cost still depends on the provider, model tier, question complexity, and answer length.
 
 ## Do I need all the AI provider keys?
 
@@ -29,32 +29,23 @@ No. You need **at least one**. The router is **provider-agnostic** — it picks 
 
 If you set multiple keys, **OpenRouter is preferred** (one key, every model), then Anthropic, then OpenAI, then Gemini. Any single key is enough for the whole app to work.
 
-## Is the sandbox secure?
+## How is the sandbox restricted?
 
-Yes. Three layers of validation:
+It uses three layers of validation:
 
 1. **SDK layer** — `validateShellCommand()` in `packages/sdk/src/shell-policy.ts` rejects disallowed commands before they leave the client
 2. **Web layer** — `executeInSandbox()` in `apps/web/server/lib/sandbox.ts` re-validates every command
-3. **Sandbox layer** — `validateShellCommand()` in `sandbox-service/shell-policy.ts` does final validation + 15s timeout + 5MB output cap
+3. **Sandbox layer** — `validateShellCommand()` in `sandbox-service/shell-policy.ts` does final validation, path confinement, and execution/output limits
 
-**Allowed commands**: `find`, `ls`, `tree`, `grep`, `egrep`, `fgrep`, `cat`, `head`, `tail`, `less`, `more`, `wc`, `sort`, `uniq`, `cut`, `awk`, `sed`, `tr`, `column`, `echo`, `printf`, `test`, `[`, `true`, `false`, `basename`, `dirname`, `realpath`, `file`, `stat`, `du`, `diff`, `comm`, `xargs`, `tee`, `md5sum`, `sha256sum`
+**Allowed commands**: `find`, `ls`, `tree`, `grep`, `egrep`, `fgrep`, `cat`, `head`, `tail`, `wc`, `sort`, `cut`, `tr`, `column`, `echo`, `printf`, `test`, `[`, `true`, `false`, `basename`, `dirname`, `realpath`, `stat`, `du`, `diff`, `comm`, `md5sum`, `sha256sum`
 
-**Blocked**: command substitution (`$()`), backticks, `eval`, `exec`, nested shells, write redirection (`>`), interpreters (`python`, `node`, `perl`, `ruby`), path traversal (`../`)
+**Blocked**: command/process substitution, backticks, `eval`, `exec`, nested shells, write redirection, interpreter entry points, path traversal, and write/execute modes such as `find -delete`, `find -exec`, or `sort -o`
 
-Only the sandbox service mounts the snapshot volume — the web service has no filesystem access.
+Only the sandbox service mounts the snapshot volume — the web service has no filesystem access. This is defense in depth; review the policies and keep the sandbox on Railway private networking before using sensitive material.
 
 ## Can I use private GitHub repos?
 
-Currently the sync clones public repos via `git clone --depth 1`. To support private repos, add a GitHub token to the clone command in `apps/web/server/api/sync.post.ts`:
-
-```ts
-// Replace:
-`git clone --depth 1 --branch ${branch} https://github.com/${repo}.git /snapshot/gh/${repoId}`
-// With:
-`git clone --depth 1 --branch ${branch} https://x-access-token:${GITHUB_TOKEN}@github.com/${repo}.git /snapshot/gh/${repoId}`
-```
-
-Set `GITHUB_TOKEN` as an environment variable on the web service.
+Not out of the box. The current sync flow intentionally clones public repositories without credentials. A private-repository implementation should use a scoped GitHub App credential and pass it without placing the token in logged command text.
 
 ## How do I add my own docs?
 
@@ -137,9 +128,9 @@ console.log(result.stdout)
 
 Set at least one of: `OPENROUTER_API_KEY` (recommended), `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` in your Railway project variables.
 
-### "Social provider github is missing clientId or clientSecret"
+### GitHub sign-in does not appear
 
-Create a GitHub OAuth app and set `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`. See [ENVIRONMENT.md](ENVIRONMENT.md) → "Setting up GitHub OAuth".
+GitHub sign-in is optional and only appears when both `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are set. Email/password authentication works without them. See [ENVIRONMENT.md](ENVIRONMENT.md) → "Setting up GitHub OAuth".
 
 ### "Sandbox sync failed"
 

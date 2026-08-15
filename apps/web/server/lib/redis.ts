@@ -49,7 +49,7 @@ export async function kvDel(key: string): Promise<void> {
   }
 }
 
-export async function kvIncr(key: string, ttlSeconds?: number): Promise<number> {
+export async function kvIncr(key: string, ttlSeconds?: number): Promise<number | null> {
   try {
     const redis = getRedis()
     const value = await redis.incr(key)
@@ -58,6 +58,6 @@ export async function kvIncr(key: string, ttlSeconds?: number): Promise<number> 
     }
     return value
   } catch {
-    return 0
+    return null
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { signIn, signUp } from '~/lib/auth-client'
 
 const mode = ref<'signin' | 'signup'>('signin')
@@ -9,7 +9,14 @@ const name = ref('')
 const loading = ref(false)
 const githubLoading = ref(false)
 const githubEnabled = ref(false)
+const signupEnabled = ref(false)
 const error = ref('')
+const route = useRoute()
+
+const postAuthPath = computed(() => {
+  const requested = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+  return requested.startsWith('/') && !requested.startsWith('//') ? requested : '/'
+})
 
 onMounted(async () => {
   try {
@@ -17,6 +24,8 @@ onMounted(async () => {
     if (res.ok) {
       const data = await res.json()
       githubEnabled.value = !!data.githubEnabled
+      signupEnabled.value = !!data.signupEnabled
+      if (!signupEnabled.value && mode.value === 'signup') mode.value = 'signin'
     }
   } catch {
     githubEnabled.value = false
@@ -41,7 +50,7 @@ async function submit() {
       })
       if (err) throw new Error(err.message || 'Sign in failed')
     }
-    await navigateTo('/', { redirectCode: 302 })
+    await navigateTo(postAuthPath.value, { redirectCode: 302 })
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Authentication failed'
   } finally {
@@ -66,133 +75,127 @@ async function githubLogin() {
 </script>
 
 <template>
-  <div class="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12">
-    <!-- Ambient glow -->
+  <div class="relative min-h-screen overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
     <div class="pointer-events-none absolute inset-0">
-      <div class="absolute left-1/2 top-0 h-[400px] w-[700px] -translate-x-1/2 rounded-full bg-amber-500/10 blur-[120px]" />
-      <div class="absolute bottom-0 right-0 h-[300px] w-[500px] rounded-full bg-cyan-500/5 blur-[100px]" />
+      <div class="absolute left-[12%] top-[-12rem] h-[38rem] w-[38rem] rounded-full bg-amber-500/[0.09] blur-[140px]" />
+      <div class="absolute bottom-[-12rem] right-[-8rem] h-[34rem] w-[34rem] rounded-full bg-cyan-500/[0.06] blur-[130px]" />
     </div>
 
-    <div class="relative grid w-full max-w-4xl items-stretch gap-6 lg:grid-cols-[1.1fr_1fr]">
-      <!-- Left: terminal hero -->
-      <div class="rise hidden flex-col lg:flex" style="animation-delay: 0.05s">
-        <div class="terminal-window flex-1">
+    <div class="relative mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col">
+      <nav class="rise flex items-center justify-between" style="animation-delay: 0.02s">
+        <a href="https://github.com/jesseoue/grep-knowledge-agent" class="flex items-center gap-2.5 text-zinc-100" target="_blank" rel="noreferrer">
+          <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-400/30 bg-amber-400/10 text-lg font-bold text-amber-300">⌕</span>
+          <span class="text-sm font-bold tracking-tight">Grep Agent</span>
+        </a>
+        <a
+          href="https://railway.com/deploy/grep-knowledge-agent?utm_medium=integration&utm_source=app&utm_campaign=grep-knowledge-agent"
+          class="inline-flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950/70 px-3 py-2 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 transition hover:border-amber-400/30 hover:text-amber-300"
+          target="_blank"
+          rel="noreferrer"
+        >
+          deploy your own <span class="text-amber-400">↗</span>
+        </a>
+      </nav>
+
+      <main class="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16 lg:py-16">
+        <section class="rise" style="animation-delay: 0.08s">
+          <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-green-400/20 bg-green-400/[0.05] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-green-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.75)]" />
+            self-hosted · source-grounded
+          </div>
+          <h1 class="max-w-3xl text-[2.65rem] font-bold leading-[0.98] tracking-[-0.065em] text-zinc-100 sm:text-5xl lg:text-6xl">
+            Search your code.<br><span class="text-amber-300">See the proof.</span>
+          </h1>
+          <p class="mt-6 max-w-xl text-sm leading-7 text-zinc-400 sm:text-base">
+            A knowledge agent that reads the files you actually own. No embedding pipeline, no vector database, and no mystery retrieval—just direct search with citations and a complete command trace.
+          </p>
+
+          <div class="mt-6 flex flex-wrap gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">
+            <span class="rounded border border-zinc-800 bg-zinc-950/60 px-2.5 py-1.5"><span class="text-cyan-300">01</span> sync GitHub</span>
+            <span class="rounded border border-zinc-800 bg-zinc-950/60 px-2.5 py-1.5"><span class="text-cyan-300">02</span> ask anything</span>
+            <span class="rounded border border-zinc-800 bg-zinc-950/60 px-2.5 py-1.5"><span class="text-cyan-300">03</span> inspect trace</span>
+          </div>
+
+          <div class="terminal-window mt-8 max-w-2xl border-zinc-700/70 shadow-[0_32px_100px_rgba(0,0,0,0.46)]">
           <div class="terminal-titlebar">
             <span class="terminal-dot bg-red-400/80" />
             <span class="terminal-dot bg-amber-400/80" />
             <span class="terminal-dot bg-green-400/80" />
-            <span class="ml-3 font-mono text-[11px] text-zinc-500">grep — interactive</span>
+            <span class="ml-3 font-mono text-[10px] text-zinc-500">trace / answer #42</span>
           </div>
-          <div class="p-6 font-mono text-[13px] leading-relaxed">
-            <p class="text-zinc-400"><span class="text-green-400">$</span> grep -r "rate limit" ~/docs</p>
-            <p class="mt-1 text-zinc-500"><span class="text-cyan-300">docs/limits.md</span><span class="text-zinc-600">:12</span>  <span class="grep-hit">rate_limit</span> = 60</p>
-            <p class="mt-1 text-zinc-500"><span class="text-cyan-300">docs/api.md</span><span class="text-zinc-600">:34</span>   429 <span class="grep-hit">rate limit</span> exceeded</p>
-            <p class="mt-4 text-zinc-400"><span class="text-green-400">$</span> cat docs/limits.md <span class="text-zinc-600">| head -20</span></p>
-            <p class="mt-1 text-zinc-500"># Rate limiting</p>
-            <p class="text-zinc-500">The API allows <span class="text-amber-300">60 req/min</span> per key.</p>
-            <p class="mt-4 flex items-center gap-1 text-zinc-400"><span class="text-green-400">$</span><span class="cursor-blink inline-block h-4 w-2 bg-amber-400/80" /></p>
+          <div class="p-4 font-mono text-[11px] leading-relaxed sm:p-6 sm:text-[12px]">
+            <p class="text-zinc-400"><span class="text-green-400">$</span> grep -R "RATE_LIMIT" ./docs ./server</p>
+            <p class="mt-1.5 text-zinc-500"><span class="text-cyan-300">server/api/chat.ts</span><span class="text-zinc-600">:19</span> RATE_LIMIT_WINDOW_S = <span class="text-amber-300">60</span></p>
+            <p class="mt-1 text-zinc-500"><span class="text-cyan-300">docs/operations.md</span><span class="text-zinc-600">:42</span> retries after the window resets</p>
+            <div class="signal-line my-4 h-px bg-zinc-800" />
+            <p class="text-zinc-300"><span class="text-amber-300">answer</span> Requests are limited to 20/minute per user, with Redis-backed counters and a local fallback.</p>
+            <p class="mt-3 text-zinc-600">sources: <span class="text-cyan-300">chat.ts:19–49</span> · <span class="text-cyan-300">operations.md:42</span></p>
           </div>
         </div>
-        <div class="mt-4 flex items-center gap-2 text-[11px] text-zinc-500">
-          <span class="inline-block h-1.5 w-1.5 rounded-full bg-green-400 shadow-[0_0_8px_2px_rgba(74,222,128,0.5)]" />
-          no embeddings · no vector DB · grep, find &amp; cat
-        </div>
-      </div>
+          <div class="mt-4 grid max-w-2xl grid-cols-3 divide-x divide-zinc-800 border-y border-zinc-800 py-3 text-center font-mono text-[9px] uppercase tracking-[0.11em] text-zinc-600 sm:text-[10px]">
+            <span><b class="block text-zinc-300">BYOK</b> any provider</span>
+            <span><b class="block text-zinc-300">read-only</b> shell policy</span>
+            <span><b class="block text-zinc-300">MIT</b> own the stack</span>
+          </div>
+        </section>
 
-      <!-- Right: login card -->
-      <div class="rise flex items-center lg:pl-2" style="animation-delay: 0.15s">
-        <div class="w-full">
-          <div class="mb-8">
-            <div class="flex items-center gap-2">
-              <span class="text-2xl font-bold text-amber-400">❯</span>
-              <h1 class="text-2xl font-bold tracking-tight text-zinc-100">Grep Knowledge Agent</h1>
-            </div>
-            <p class="mt-2 font-mono text-[12px] text-zinc-500">
-              grep, not embeddings — a filesystem, bash, and an LLM
-            </p>
+        <section class="rise lg:pl-2" style="animation-delay: 0.16s">
+          <div class="mb-6">
+            <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-amber-400">private workspace</p>
+            <h2 class="mt-2 text-2xl font-bold tracking-[-0.04em] text-zinc-100">Start searching.</h2>
+            <p class="mt-2 text-[12px] leading-relaxed text-zinc-500">{{ signupEnabled ? 'Sign in to your deployment, or create the first workspace account.' : 'Sign in to this private workspace.' }}</p>
           </div>
 
-          <div class="terminal-window">
-            <div class="terminal-titlebar">
-              <span class="ml-1 font-mono text-[11px] text-zinc-500">{{ mode === 'signin' ? 'auth/login' : 'auth/register' }}</span>
+          <div class="terminal-window border-zinc-700/70">
+            <div class="terminal-titlebar justify-between">
+              <span class="ml-1 font-mono text-[10px] text-zinc-500">{{ mode === 'signin' ? 'session/sign-in' : 'session/create-account' }}</span>
+              <span class="font-mono text-[9px] uppercase tracking-[0.12em] text-green-400">encrypted</span>
             </div>
 
-            <div class="p-6">
-              <UAlert v-if="error" type="error" :title="error" class="mb-4" icon="i-lucide-triangle-alert" />
+            <div class="p-5 sm:p-6">
+              <UAlert v-if="error" color="error" variant="subtle" :title="error" class="mb-4" icon="i-lucide-triangle-alert" />
 
-              <!-- Mode toggle -->
-              <div class="mb-5 grid grid-cols-2 gap-1 rounded-lg border border-zinc-800 bg-zinc-950 p-1 font-mono text-[12px]">
-                <button
-                  type="button"
-                  class="rounded-md py-1.5 font-medium transition"
-                  :class="mode === 'signin' ? 'bg-amber-400/15 text-amber-300' : 'text-zinc-500 hover:text-zinc-300'"
-                  @click="mode = 'signin'"
-                >
-                  sign_in
-                </button>
-                <button
-                  type="button"
-                  class="rounded-md py-1.5 font-medium transition"
-                  :class="mode === 'signup' ? 'bg-amber-400/15 text-amber-300' : 'text-zinc-500 hover:text-zinc-300'"
-                  @click="mode = 'signup'"
-                >
-                  register
-                </button>
+              <div class="mb-5 grid gap-1 rounded-lg border border-zinc-800 bg-zinc-950 p-1 font-mono text-[11px]" :class="signupEnabled ? 'grid-cols-2' : 'grid-cols-1'">
+                <button type="button" class="rounded-md py-2 font-medium transition" :class="mode === 'signin' ? 'bg-amber-400/15 text-amber-300 shadow-[inset_0_0_18px_rgba(251,191,36,0.05)]' : 'text-zinc-500 hover:text-zinc-300'" @click="mode = 'signin'; error = ''">sign in</button>
+                <button v-if="signupEnabled" type="button" class="rounded-md py-2 font-medium transition" :class="mode === 'signup' ? 'bg-amber-400/15 text-amber-300 shadow-[inset_0_0_18px_rgba(251,191,36,0.05)]' : 'text-zinc-500 hover:text-zinc-300'" @click="mode = 'signup'; error = ''">create account</button>
               </div>
 
-              <!-- Email / Password form (primary — works with no extra config) -->
               <form class="space-y-4" @submit.prevent="submit">
                 <div v-if="mode === 'signup'">
-                  <label class="mb-1.5 block font-mono text-[11px] text-zinc-500">name</label>
-                  <UInput v-model.trim="name" placeholder="jane_doe" autocomplete="name" />
+                  <label for="auth-name" class="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">name</label>
+                  <UInput id="auth-name" v-model.trim="name" class="w-full" placeholder="Jane Doe" autocomplete="name" required />
                 </div>
                 <div>
-                  <label class="mb-1.5 block font-mono text-[11px] text-zinc-500">email</label>
-                  <UInput v-model.trim="email" type="email" placeholder="you@example.com" autocomplete="email" required />
+                  <label for="auth-email" class="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">email</label>
+                  <UInput id="auth-email" v-model.trim="email" class="w-full" type="email" placeholder="you@example.com" autocomplete="email" required />
                 </div>
                 <div>
-                  <label class="mb-1.5 block font-mono text-[11px] text-zinc-500">password</label>
-                  <UInput v-model.trim="password" type="password" placeholder="••••••••" autocomplete="current-password" required />
+                  <div class="mb-1.5 flex items-center justify-between">
+                    <label for="auth-password" class="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">password</label>
+                    <span v-if="mode === 'signup'" class="font-mono text-[9px] text-zinc-600">8+ characters</span>
+                  </div>
+                  <UInput id="auth-password" v-model="password" class="w-full" type="password" placeholder="••••••••" :autocomplete="mode === 'signup' ? 'new-password' : 'current-password'" minlength="8" required />
                 </div>
-                <UButton
-                  block
-                  type="submit"
-                  color="primary"
-                  :loading="loading"
-                  icon="i-lucide-terminal"
-                  class="!font-semibold"
-                >
-                  {{ mode === 'signin' ? '$ ./auth --signin' : '$ ./auth --register' }}
+                <UButton block type="submit" color="primary" size="lg" :loading="loading" icon="i-lucide-arrow-right" class="!mt-5 !font-semibold">
+                  {{ mode === 'signin' ? 'Enter workspace' : 'Create workspace account' }}
                 </UButton>
               </form>
 
-              <!-- GitHub OAuth — only shown when credentials are configured -->
               <template v-if="githubEnabled">
-                <div class="my-5 flex items-center gap-3 text-[11px] text-zinc-600">
-                  <div class="h-px flex-1 bg-zinc-800"></div>
-                  or
-                  <div class="h-px flex-1 bg-zinc-800"></div>
-                </div>
-                <UButton
-                  block
-                  color="neutral"
-                  variant="outline"
-                  icon="i-lucide-github"
-                  :loading="githubLoading"
-                  class="!border-zinc-700 !bg-transparent !text-zinc-200 hover:!bg-zinc-900"
-                  @click="githubLogin"
-                >
-                  Continue with GitHub
-                </UButton>
+                <div class="my-5 flex items-center gap-3 text-[10px] uppercase tracking-[0.12em] text-zinc-600"><div class="h-px flex-1 bg-zinc-800" />or<div class="h-px flex-1 bg-zinc-800" /></div>
+                <UButton block color="neutral" variant="outline" icon="i-lucide-github" :loading="githubLoading" class="!border-zinc-700 !bg-transparent !text-zinc-200 hover:!bg-zinc-900" @click="githubLogin">Continue with GitHub</UButton>
               </template>
+
+              <p class="mt-5 text-center font-mono text-[9px] leading-relaxed text-zinc-600">Your credentials and chat history stay inside this deployment.</p>
             </div>
           </div>
+        </section>
+      </main>
 
-          <p class="mt-6 text-center font-mono text-[11px] text-zinc-600">
-            self-hosted on Railway · MIT · fork of vercel-labs/knowledge-agent-template
-          </p>
-        </div>
-      </div>
+      <footer class="flex flex-col items-center justify-between gap-3 border-t border-zinc-900 py-5 font-mono text-[9px] uppercase tracking-[0.12em] text-zinc-700 sm:flex-row">
+        <span>Grep Knowledge Agent · MIT</span>
+        <span class="flex items-center gap-4"><a href="https://github.com/jesseoue/grep-knowledge-agent" target="_blank" rel="noreferrer" class="hover:text-zinc-400">source ↗</a><a href="https://railway.com" target="_blank" rel="noreferrer" class="hover:text-zinc-400">runs on Railway ↗</a></span>
+      </footer>
     </div>
   </div>
 </template>

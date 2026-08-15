@@ -22,30 +22,30 @@ const rateLimitMap = new Map<string, { count: number, resetAt: number }>()
 
 async function checkRateLimit(userId: string): Promise<{ ok: boolean, retryAfter?: number }> {
   // Try Redis first (works across multiple replicas in production)
-  try {
-    const { kvIncr } = await import('../lib/redis')
-    const count = await kvIncr(`ratelimit:${userId}`, RATE_LIMIT_WINDOW_S)
+  const { kvIncr } = await import('../lib/redis')
+  const count = await kvIncr(`ratelimit:${userId}`, RATE_LIMIT_WINDOW_S)
+  if (count !== null) {
     if (count > RATE_LIMIT_MAX_REQUESTS) {
       return { ok: false, retryAfter: RATE_LIMIT_WINDOW_S }
     }
     return { ok: true }
-  } catch {
-    // Fallback: in-memory rate limiter (single replica / local dev)
-    const now = Date.now()
-    const entry = rateLimitMap.get(userId)
+  }
 
-    if (!entry || now > entry.resetAt) {
-      rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_S * 1000 })
-      return { ok: true }
-    }
+  // Redis is unavailable: preserve rate limiting with a per-process fallback.
+  const now = Date.now()
+  const entry = rateLimitMap.get(userId)
 
-    if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
-      return { ok: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) }
-    }
-
-    entry.count++
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_S * 1000 })
     return { ok: true }
   }
+
+  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return { ok: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) }
+  }
+
+  entry.count++
+  return { ok: true }
 }
 
 // Clean up expired in-memory rate limit entries periodically

@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { randomBytes } from 'node:crypto'
 import { getDb } from '../db'
+import { canCreateAccount } from './registration'
 let authInstance: ReturnType<typeof createAuth> | null = null
 
 /** Build the list of origins Better Auth will trust for OAuth callbacks + cookies. */
@@ -67,18 +68,25 @@ function createAuth() {
       // "The model \"user\" was not found in the schema object".
       usePlural: true,
     }),
-    socialProviders: {
-      github: {
-        clientId: process.env.GITHUB_CLIENT_ID || '',
-        clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
-        // Scopes needed to access the snapshot repo as the user.
-        // The template reads public repos without scopes.
-      },
-    },
+    socialProviders: process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
+      ? {
+          github: {
+            clientId: process.env.GITHUB_CLIENT_ID,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET,
+          },
+        }
+      : {},
     secret: resolveSecret(),
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          before: async () => canCreateAccount(),
+        },
+      },
     },
     session: {
       cookieCache: {

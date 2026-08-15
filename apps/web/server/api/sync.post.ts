@@ -1,22 +1,50 @@
 import { z } from 'zod'
 import { getDb, schema } from '../db'
 import { requireUserSession } from '../lib/session'
-
-// Strict validation: `owner/repo` only, no scheme/host/path that could smuggle
-// arbitrary commands into the shell. Branch is restricted to safe git ref chars.
-const repoPattern = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/
-const branchPattern = /^[A-Za-z0-9._/-]{1,100}$/
+import { branchSchema, contentPathSchema, repoPattern, repoSchema } from '../lib/source-validation'
+import { getSnapshotDir } from '../lib/snapshot-path'
 
 const syncBodySchema = z.object({
-  sources: z.array(z.string()).optional(),
-  repo: z.string().regex(repoPattern, 'repo must be "owner/repo"').optional(),
-  branch: z.string().regex(branchPattern).default('main').optional(),
-  contentPath: z.string().optional(),
+  sources: z.array(z.string().uuid()).max(100).optional(),
+  repo: repoSchema.optional(),
+  branch: branchSchema.default('main'),
+  contentPath: contentPathSchema.optional(),
+}).superRefine((body, context) => {
+  if (body.repo && body.sources?.length) {
+    context.addIssue({
+      code: 'custom',
+      path: ['sources'],
+      message: 'Choose either a direct repository or saved sources, not both',
+    })
+  }
 })
 
 export default defineEventHandler(async (event) => {
   await requireUserSession(event)
-  const body = await readValidatedBody(event, syncBodySchema.parse).catch((): z.infer<typeof syncBodySchema> => ({}))
+  const body = await readValidatedBody(event, syncBodySchema.parse)
+
+  // A repository entered in the quick-sync field always takes precedence over
+  // saved source records. Previously it was silently ignored once any source
+  // existed in the database.
+  if (body.repo) {
+    try {
+      await syncRepoToSandbox(body.repo, body.branch, body.contentPath || undefined)
+      return {
+        success: true,
+        summary: { total: 1, synced: 1, failed: 0 },
+        results: [{ sourceId: null, label: body.repo, success: true }],
+      }
+    } catch (error) {
+      throw createError({
+        statusCode: 502,
+        statusMessage: 'Repository sync failed',
+        data: {
+          why: error instanceof Error ? error.message : String(error),
+          fix: 'Check the repository, branch, content path, and sandbox service',
+        },
+      })
+    }
+  }
 
   const db = getDb()
   let allSources: typeof schema.sources.$inferSelect[]
@@ -29,26 +57,6 @@ export default defineEventHandler(async (event) => {
   const sources = body?.sources?.length
     ? allSources.filter(s => body.sources!.includes(s.id))
     : allSources
-
-  // If a raw repo was supplied (from the "Snapshot repository" field),
-  // sync it directly without needing a DB source record.
-  if (body?.repo && !sources.length) {
-    const repo = body.repo.trim()
-    try {
-      await syncRepoToSandbox(repo, body.branch || 'main', body.contentPath || undefined)
-      return {
-        success: true,
-        summary: { total: 1, synced: 1, failed: 0 },
-        results: [{ sourceId: null, label: repo, success: true }],
-      }
-    } catch (error) {
-      return {
-        success: false,
-        summary: { total: 1, synced: 0, failed: 1 },
-        results: [{ sourceId: null, label: repo, success: false, error: error instanceof Error ? error.message : String(error) }],
-      }
-    }
-  }
 
   if (sources.length === 0) {
     // Nothing to sync — still ensure the default snapshot repo exists
@@ -64,7 +72,11 @@ export default defineEventHandler(async (event) => {
       await syncRepoToSandbox(snapshotRepo, process.env.SNAPSHOT_BRANCH || 'main')
       return { success: true, summary: { total: 1, synced: 1, failed: 0 }, results: [{ sourceId: null, label: snapshotRepo, success: true }] }
     } catch (error) {
-      return { success: false, summary: { total: 1, synced: 0, failed: 1 }, results: [{ sourceId: null, label: snapshotRepo, success: false, error: error instanceof Error ? error.message : String(error) }] }
+      throw createError({
+        statusCode: 502,
+        statusMessage: 'Default repository sync failed',
+        data: { why: error instanceof Error ? error.message : String(error) },
+      })
     }
   }
 
@@ -93,8 +105,11 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  const success = results.every(r => r.success)
+  if (!success) setResponseStatus(event, 207)
+
   return {
-    success: results.every(r => r.success),
+    success,
     summary: {
       total: results.length,
       synced: results.filter(r => r.success).length,
@@ -105,8 +120,9 @@ export default defineEventHandler(async (event) => {
 })
 
 async function syncRepoToSandbox(repo: string, branch: string, contentPath?: string) {
-  const target = contentPath ? `${contentPath}` : '.'
   const safeDir = repo.split('/').join('_')
+  const snapshotDir = getSnapshotDir()
+  const destination = `${snapshotDir}/gh/${safeDir}`
 
   // Clone (or pull) the repo inside the snapshot volume via the sandbox service.
   // The sandbox service is the only one with the volume mounted. Commands are
@@ -114,12 +130,18 @@ async function syncRepoToSandbox(repo: string, branch: string, contentPath?: str
   // validateSyncCommand allows; repo/branch are validated against strict
   // patterns above to prevent shell injection.
   const commands = [
-    `mkdir -p /snapshot/gh/${safeDir}`,
-    `rm -rf /snapshot/gh/${safeDir}`,
-    `git clone --depth 1 --branch ${branch} https://github.com/${repo}.git /snapshot/gh/${safeDir}`,
-    `find /snapshot/gh/${safeDir} -type f ! \\( -name "*.md" -o -name "*.mdx" -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" \\) -delete`,
-    `find /snapshot/gh/${safeDir} -type d -empty -delete`,
+    `mkdir -p ${destination}`,
+    `rm -rf ${destination}`,
+    `git clone --depth 1${contentPath ? ' --filter=blob:none --sparse' : ''} --branch ${branch} https://github.com/${repo}.git ${destination}`,
   ]
+  if (contentPath) {
+    commands.push(`git -C ${destination} sparse-checkout set --no-cone -- ${contentPath}`)
+  }
+  commands.push(
+    `rm -rf ${destination}/.git`,
+    `find ${destination} -type f ! \\( -name "*.md" -o -name "*.mdx" -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" \\) -delete`,
+    `find ${destination} -type d -empty -delete`,
+  )
 
   const sandboxUrl = (process.env.SANDBOX_URL || 'http://sandbox.railway.internal:3200').replace(/\/$/, '')
   const sandboxSecret = process.env.SANDBOX_SECRET || ''

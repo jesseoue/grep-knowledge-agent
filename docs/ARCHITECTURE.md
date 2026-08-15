@@ -6,10 +6,10 @@ This document explains how the Grep Knowledge Agent works — and why it replace
 
 Instead of chunking, embedding, and storing your knowledge base in a vector database, the agent gets the actual files and uses `grep`, `find`, and `cat` to search them. This is:
 
-- **Deterministic** — same question, same files read, same answer.
-- **Explainable** — you can see exactly which commands the agent ran and which files it read.
-- **Cheap** — no embedding model, no vector DB, no chunking pipeline. ~75% lower cost per call (Vercel's own measurements).
-- **Fast** — the search is a filesystem read, not an approximate-nearest-neighbor query.
+- **Inspectable** — you can see exactly which commands the agent ran and which files it read.
+- **Direct** — search operates on the source files instead of a derived embedding index.
+- **Lean** — no embedding model, vector database, or chunking pipeline is required.
+- **Easy to debug** — failed retrieval is visible in the command trace.
 
 ## System diagram
 
@@ -19,7 +19,7 @@ Instead of chunking, embedding, and storing your knowledge base in a vector data
 │  /settings  │    │  · Agent loop (AI SDK)                   │    │  (sidecar)    │
 │  admin      │    │  · Complexity router                     │    │  grep/find/   │
 └─────────────┘    │  · PostgreSQL (chats, sources, users)    │    │  cat (read-   │
-                   │  · Redis (sessions, rate limits)         │    │  only, gVisor)│
+                   │  · Redis (rate limits, coordination)    │    │  only policy)│
                    │  · GitHub sync → snapshot volume         │    └──────────────┘
                    └──────────────────────────────────────────┘
                                    │  shared volume (snapshot repo)
@@ -58,10 +58,10 @@ A tiny Node HTTP server that is the **only** service with the snapshot volume mo
 Both endpoints:
 
 - Executes commands via `execFile` against `bash -c` (read-only policy enforced first)
-- **Allowlists commands**: `find`, `ls`, `tree`, `grep`, `egrep`, `fgrep`, `cat`, `head`, `tail`, `less`, `more`, `wc`, `sort`, `uniq`, `cut`, `awk`, `sed`, `tr`, `column`, `echo`, `printf`, `test`, `[`, `true`, `false`, `basename`, `dirname`, `realpath`, `file`, `stat`, `du`, `diff`, `comm`, `xargs`, `tee`, `md5sum`, `sha256sum`
-- **Blocks dangerous patterns**: command substitution, backticks, `eval`, `exec`, nested shells, write redirection, interpreters (`python`, `node`, `perl`, `ruby`)
-- **Restricts paths** to `/snapshot` — no traversal outside the volume
-- Enforces a 15s timeout and 5MB output cap per command
+- **Allowlists read commands**: `find`, `ls`, `tree`, `grep`, `egrep`, `fgrep`, `cat`, `head`, `tail`, `wc`, `sort`, `cut`, `tr`, `column`, `echo`, `printf`, `test`, `[`, `true`, `false`, `basename`, `dirname`, `realpath`, `stat`, `du`, `diff`, `comm`, `md5sum`, `sha256sum`
+- **Blocks dangerous patterns and modes**: command/process substitution, backticks, `eval`, `exec`, nested shells, write redirection, interpreter entry points, and write/execute modes exposed by otherwise read-oriented utilities
+- **Restricts paths** to `SNAPSHOT_DIR` (default `/snapshot`) — no traversal outside the volume
+- Enforces a 120-second execution timeout and 10 MiB raw output cap per command; the web layer further trims returned output to 50,000 characters
 
 The web service reaches it over the Railway private network (`SANDBOX_URL`, default `http://sandbox.railway.internal:3200`).
 
@@ -79,7 +79,7 @@ The sandbox service is the security boundary. The web service sends commands, bu
 
 1. The SDK's `validateShellCommand` rejects disallowed commands/paths before they leave the client.
 2. The web service re-validates every command before forwarding.
-3. The sandbox re-validates and executes with a 15s timeout.
+3. The sandbox re-validates, confines paths to the snapshot root, and enforces execution and output limits.
 4. Only the sandbox service mounts the volume — the web service has no filesystem access to the snapshot, so a compromised API can't read arbitrary files.
 
 This is defense-in-depth: even if one validation layer is bypassed, the next catches it.
@@ -91,10 +91,11 @@ User adds source (owner/repo)  →  POST /api/sources
 User clicks "Sync"             →  POST /api/sync
                                    │
                                    ├─ web → sandbox /sync-run:
-                                   │        git clone --depth 1 --branch <branch>
+                                   │        git clone --filter=blob:none --no-checkout
                                    │          https://github.com/<owner>/<repo>.git
                                    │          /snapshot/gh/<owner>_<repo>
-                                   │        find ... -delete  (docs-only filter)
+                                   │        git sparse-checkout (when contentPath is set)
+                                   │        find ... -delete  (supported text formats only)
                                    │        find ... -type d -empty -delete
                                    └─ sandbox volume updated → agent can grep it
 ```

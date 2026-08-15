@@ -7,6 +7,10 @@ export default defineNuxtConfig({
     '@nuxtjs/mdc',
   ],
 
+  mdc: {
+    highlight: false,
+  },
+
   icon: {
     clientBundle: {
       scan: true,
@@ -17,13 +21,18 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NODE_ENV !== 'production' },
 
   nitro: {
     experimental: {
       asyncContext: true,
       openAPI: true,
     },
+  },
+
+  routeRules: {
+    '/api/**': { headers: { 'x-robots-tag': 'noindex, nofollow' } },
+    '/settings': { headers: { 'x-robots-tag': 'noindex, nofollow' } },
   },
 
   runtimeConfig: {

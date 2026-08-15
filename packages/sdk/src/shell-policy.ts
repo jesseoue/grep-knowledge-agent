@@ -17,14 +17,10 @@ export const ALLOWED_BASH_COMMANDS = new Set([
   'cat',
   'head',
   'tail',
-  'less',
-  'more',
   // Text processing (output filtering)
   'wc',
   'sort',
-  'uniq',
   'cut',
-  'awk',
   'tr',
   'column',
   // Utilities
@@ -37,13 +33,10 @@ export const ALLOWED_BASH_COMMANDS = new Set([
   'basename',
   'dirname',
   'realpath',
-  'file',
   'stat',
   'du',
   'diff',
   'comm',
-  'xargs',
-  'tee',
   // String/path helpers
   'md5sum',
   'sha256sum',
@@ -52,6 +45,7 @@ export const ALLOWED_BASH_COMMANDS = new Set([
 export const BLOCKED_SHELL_PATTERNS = [
   /\$\(/, // command substitution $(...)
   /`[^`]+`/, // backtick substitution
+  /[<>]\(/, // process substitution <(...) or >(...)
   /\beval\b/, // eval
   /\bexec\b/, // exec
   /\bsource\b/, // source
@@ -67,8 +61,10 @@ export const BLOCKED_SHELL_PATTERNS = [
 ]
 
 export function isPathWithinDirectory(filePath: string, directory: string): boolean {
-  const resolvedPath = path.resolve(filePath)
   const resolvedDir = path.resolve(directory)
+  const resolvedPath = path.isAbsolute(filePath)
+    ? path.resolve(filePath)
+    : path.resolve(resolvedDir, filePath)
   return resolvedPath.startsWith(`${resolvedDir}${path.sep}`) || resolvedPath === resolvedDir
 }
 
@@ -104,13 +100,8 @@ function validatePaths(command: string, allowedBaseDirectory?: string): ShellVal
 
   const tokens = extractPotentialPathTokens(command)
   for (const token of tokens) {
-    if (token.startsWith('../')) {
-      return { ok: false, reason: `Path traversal is not allowed: ${token}` }
-    }
-    if (token.startsWith('/')) {
-      if (!isPathWithinDirectory(token, allowedBaseDirectory)) {
-        return { ok: false, reason: `Path outside sandbox is not allowed: ${token}` }
-      }
+    if (!isPathWithinDirectory(token, allowedBaseDirectory)) {
+      return { ok: false, reason: `Path outside sandbox is not allowed: ${token}` }
     }
   }
 
@@ -128,6 +119,15 @@ export function validateShellCommand(
     if (pattern.test(command)) {
       return { ok: false, reason: `Command contains blocked pattern: ${command.slice(0, 50)}` }
     }
+  }
+
+  // Some allowlisted read utilities also expose write/execute modes. Reject
+  // those modes explicitly so the AI-facing endpoint remains truly read-only.
+  if (/\bfind\b[^|;&]*\s-(?:delete|exec|execdir|ok|okdir|fprint|fprintf|fls)\b/.test(command)) {
+    return { ok: false, reason: 'Write or execute actions are not allowed for find' }
+  }
+  if (/\bsort\b[^|;&]*(?:\s-o\S*|\s--output(?:\s|=))/.test(command)) {
+    return { ok: false, reason: 'Writing sort output to a file is not allowed' }
   }
 
   const segments = command.split(/\s*(?:\|(?!\|)|\|\||&&|;)\s*/)

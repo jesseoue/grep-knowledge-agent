@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Grep Knowledge Agent</title>
+  <desc id="desc">Search your code. See the proof.</desc>
+  <defs>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#15120b"/>
+      <stop offset="0.55" stop-color="#080a0d"/>
+      <stop offset="1" stop-color="#071317"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#263039" stroke-width="1" opacity=".24"/>
+    </pattern>
+    <filter id="amber-glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <circle cx="113" cy="92" r="72" fill="#f0b429" opacity=".08" filter="url(#amber-glow)"/>
+  <circle cx="1102" cy="550" r="110" fill="#22d3ee" opacity=".06" filter="url(#amber-glow)"/>
+
+  <g transform="translate(72 62)">
+    <rect x="0" y="0" width="58" height="58" rx="14" fill="#f0b429"/>
+    <path d="M17 19h24M17 29h16M17 39h22" stroke="#090909" stroke-width="5" stroke-linecap="round"/>
+    <text x="78" y="25" fill="#f7f5ef" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="24" font-weight="700">GREP</text>
+    <text x="78" y="50" fill="#8e9aa5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" letter-spacing="2">KNOWLEDGE AGENT</text>
+  </g>
+
+  <g transform="translate(72 194)">
+    <text x="0" y="0" fill="#f7f5ef" font-family="Arial, Helvetica, sans-serif" font-size="67" font-weight="750">Search your code.</text>
+    <text x="0" y="78" fill="#f0b429" font-family="Arial, Helvetica, sans-serif" font-size="67" font-weight="750">See the proof.</text>
+    <text x="2" y="128" fill="#9aa5ae" font-family="Arial, Helvetica, sans-serif" font-size="23">Self-hosted AI retrieval with a visible command trace.</text>
+  </g>
+
+  <g transform="translate(72 418)">
+    <rect width="1056" height="148" rx="18" fill="#0b0f12" stroke="#273039"/>
+    <circle cx="25" cy="24" r="5" fill="#ff6b6b"/>
+    <circle cx="44" cy="24" r="5" fill="#f0b429"/>
+    <circle cx="63" cy="24" r="5" fill="#4ade80"/>
+    <text x="88" y="30" fill="#63717d" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14">command trace</text>
+    <text x="24" y="76" fill="#f0b429" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="19">$ grep -Rni "rate limit" docs/</text>
+    <text x="24" y="111" fill="#d7dde1" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17">docs/configuration.md:42  Set MAX_TOKENS_PER_USER to cap usage.</text>
+    <text x="872" y="132" fill="#22d3ee" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14">DEPLOY ON RAILWAY →</text>
+  </g>
+</svg>

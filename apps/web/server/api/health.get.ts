@@ -1,7 +1,7 @@
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
   const checks: Record<string, string> = {}
 
-  // Check DB connectivity (best-effort — don't fail the healthcheck if DB is slow)
+  // A green healthcheck means the template is actually ready to use.
   try {
     const { getDb } = await import('../db')
     const db = getDb()
@@ -22,10 +22,30 @@ export default defineEventHandler(async () => {
     checks.redis = 'error'
   }
 
-  const allOk = Object.values(checks).every(v => v === 'ok')
+  try {
+    const sandboxUrl = (process.env.SANDBOX_URL || 'http://sandbox.railway.internal:3200').replace(/\/$/, '')
+    const response = await fetch(`${sandboxUrl}/health`, { signal: AbortSignal.timeout(2_000) })
+    checks.sandbox = response.ok ? 'ok' : 'error'
+  } catch {
+    checks.sandbox = 'error'
+  }
+
+  try {
+    const { hasAIProvider } = await import('../lib/models')
+    checks.ai = hasAIProvider() ? 'ok' : 'error'
+  } catch {
+    checks.ai = 'error'
+  }
+
+  // Provider keys are user configuration, not process readiness. Keeping them
+  // out of the 503 decision lets a fresh Railway deploy become reachable so
+  // the owner can finish setup without the platform killing the service.
+  const infrastructureOk = ['db', 'redis', 'sandbox'].every(name => checks[name] === 'ok')
+  const fullyConfigured = infrastructureOk && checks.ai === 'ok'
+  setResponseStatus(event, infrastructureOk ? 200 : 503)
 
   return {
-    status: allOk ? 'ok' : 'degraded',
+    status: fullyConfigured ? 'ok' : infrastructureOk ? 'needs_configuration' : 'degraded',
     service: 'grep-knowledge-agent',
     checks,
     time: new Date().toISOString(),

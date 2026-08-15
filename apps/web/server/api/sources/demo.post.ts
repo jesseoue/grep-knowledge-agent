@@ -1,5 +1,6 @@
 import { getDb, schema } from '../../db'
 import { requireUserSession } from '../../lib/session'
+import { and, eq } from 'drizzle-orm'
 
 // Adds a pre-configured demo source so a brand-new user can try the agent
 // immediately without typing a repo URL. Syncs the original template's docs.
@@ -8,6 +9,15 @@ export default defineEventHandler(async (event) => {
   const db = getDb()
 
   try {
+    const [existing] = await db.select().from(schema.sources).where(and(
+      eq(schema.sources.type, 'github'),
+      eq(schema.sources.repo, 'vercel-labs/knowledge-agent-template'),
+    )).limit(1)
+
+    if (existing) {
+      return { success: true, source: existing, created: false }
+    }
+
     const result = await db.insert(schema.sources).values({
       type: 'github',
       label: 'Knowledge Agent Template (Demo)',
@@ -19,7 +29,7 @@ export default defineEventHandler(async (event) => {
       maxVideos: 50,
     }).returning()
 
-    return { success: true, source: result[0] }
+    return { success: true, source: result[0], created: true }
   } catch (error) {
     console.error('[sources.demo]', error)
     throw createError({

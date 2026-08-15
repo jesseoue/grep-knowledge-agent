@@ -10,6 +10,8 @@ All configuration is done via environment variables. On Railway these are set pe
 | `DATABASE_URL` | `postgresql://...` | PostgreSQL connection string (provided by Railway Postgres plugin). |
 | `REDIS_URL` | `redis://default:...` | Redis connection string (provided by Railway Redis plugin). |
 
+By default, registration closes after the first workspace account is created. Set `ALLOW_PUBLIC_SIGNUP=true` only when every person who can reach the deployment should be allowed into the shared source workspace.
+
 > At least **one** AI provider key is required:
 
 | Variable | Provider | Enables models |
@@ -37,6 +39,8 @@ model per question difficulty from that provider.
 | `SNAPSHOT_REPO` | — | Default `owner/repo` to seed on first sync. |
 | `SNAPSHOT_BRANCH` | `main` | Branch to clone. |
 | `SANDBOX_URL` | `http://sandbox.railway.internal:3200` | Private hostname of the sandbox service. |
+| `SNAPSHOT_DIR` | `/snapshot` | Snapshot root shared by web validation and the sandbox. Keep the default on Railway. |
+| `SANDBOX_SECRET` | — | Optional shared key for authenticated web-to-sandbox requests. Recommended for production. |
 | `PUBLIC_SITE_URL` | — | Your public app URL (used for auth trusted origins). |
 | `MAX_TOKENS_PER_USER` | `0` (unlimited) | Credit quota — max tokens a user may consume (all-time). Set to cap free usage and bill against credits. |
 | `GITHUB_CLIENT_ID` | — | GitHub OAuth client ID. **Optional** — enables "Continue with GitHub" on the login page. Email/password works without it. |
@@ -92,7 +96,7 @@ You need at least one. The agent uses a **complexity router** — a cheap model 
 
 ## Setting up GitHub OAuth
 
-The template uses GitHub OAuth for authentication (Better Auth). You need a GitHub OAuth app:
+Email/password authentication works without additional setup. To optionally enable **Continue with GitHub**, create a GitHub OAuth app:
 
 1. Go to GitHub → **Settings → Developer settings → OAuth Apps → New OAuth App**
    - Direct link: <https://github.com/settings/developers>

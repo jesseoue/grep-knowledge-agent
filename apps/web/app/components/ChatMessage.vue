@@ -23,7 +23,6 @@ defineProps<{
         <div v-if="content" class="mdc-prose rounded-lg border border-zinc-800/70 bg-[#0d0d10] px-5 py-4 text-[13px] leading-relaxed text-zinc-300">
           <MDC
             :value="content"
-            :data="{ theme: 'terminal' }"
             tag="div"
           />
         </div>

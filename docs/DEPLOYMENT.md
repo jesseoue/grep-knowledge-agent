@@ -11,6 +11,8 @@ The template provisions:
 - **PostgreSQL** (Railway plugin) → `DATABASE_URL`
 - **Redis** (Railway plugin) → `REDIS_URL`
 
+The template also generates and shares `BETTER_AUTH_SECRET` and `SANDBOX_SECRET`, connects services over Railway private networking, configures both health checks, and mounts persistent storage. The deployer only needs to enter one AI provider key.
+
 ### After deploy
 
 1. Set an AI provider key — at least one of:
@@ -21,9 +23,9 @@ The template provisions:
 
    See [ENVIRONMENT.md](ENVIRONMENT.md) for detailed instructions.
 
-2. Set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` (see [ENVIRONMENT.md](ENVIRONMENT.md) → "Setting up GitHub OAuth").
+2. Open your app and create an email/password account. GitHub OAuth is optional; set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` only if you want GitHub sign-in.
 
-3. Open your app → **Settings** → add a GitHub source (e.g. `vercel-labs/knowledge-agent-template`) → **Sync**.
+3. Open **Settings** → load the demo source or add a public GitHub source (e.g. `vercel-labs/knowledge-agent-template`) → **Sync**.
 
 4. Ask it anything. It answers with `grep`, not vectors.
 
@@ -58,13 +60,15 @@ docker run -p 3200:3200 -v /tmp/snapshot:/snapshot grep-agent-sandbox
 
 ## Railway config
 
-- `railway.json` / `railway.toml` — root config-as-code: Nixpacks build, healthcheck at `/api/health`, restart-on-failure.
+- `railway.json` — root config-as-code: Dockerfile builds, healthcheck at `/api/health`, always-restart policy, and graceful deployment overlap/draining.
 - `apps/web/Dockerfile` — multi-stage: bun install → Nuxt build → minimal node runtime.
-- `sandbox-service/Dockerfile` — node slim + grep/find/coreutils.
+- `sandbox-service/Dockerfile` — bundled TypeScript server on node slim + grep/find/coreutils.
+
+The template composer sets `RAILWAY_DOCKERFILE_PATH` separately for the web and sandbox services because this is a monorepo. Keep those paths as `/apps/web/Dockerfile` and `/sandbox-service/Dockerfile` when cloning the template manually.
 
 ## Health checks
 
-- Web: `GET /api/health` → `{"status":"ok"}` (used by Railway readiness check)
+- Web: `GET /api/health` checks PostgreSQL, Redis, the sandbox, and AI-provider configuration. It returns `503` when infrastructure is unavailable; a fresh deploy without an AI key returns `200` with `needs_configuration` so the owner can finish setup.
 - Sandbox: `GET /health` or `GET /api/health` → `{"status":"ok"}`
 
 ## Volumes

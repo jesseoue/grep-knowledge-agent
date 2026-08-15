@@ -1,4 +1,5 @@
 import { validateShellCommand } from '@grep/sdk'
+import { getSnapshotDir } from './snapshot-path'
 
 export interface CommandResult {
   command: string
@@ -30,19 +31,20 @@ export async function executeInSandbox(options: ShellExecuteOptions): Promise<{
 }> {
   const sandboxUrl = (process.env.SANDBOX_URL || DEFAULT_SANDBOX_URL).replace(/\/$/, '')
   const sandboxSecret = process.env.SANDBOX_SECRET || ''
+  const snapshotDir = getSnapshotDir()
 
   const reqHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
   if (sandboxSecret) reqHeaders['X-Sandbox-Key'] = sandboxSecret
 
   for (const command of options.commands) {
     const validation = validateShellCommand(command, {
-      allowedBaseDirectory: '/snapshot',
+      allowedBaseDirectory: snapshotDir,
     })
     if (!validation.ok) {
       throw createError({
         statusCode: 400,
         message: validation.reason,
-        data: { why: 'The command failed security validation', fix: 'Use only allowed commands within /snapshot' },
+        data: { why: 'The command failed security validation', fix: `Use only allowed commands within ${snapshotDir}` },
       })
     }
   }
@@ -50,7 +52,7 @@ export async function executeInSandbox(options: ShellExecuteOptions): Promise<{
   const body = JSON.stringify({
     commands: options.commands,
     sessionId: options.sessionId,
-    cwd: options.cwd || '/snapshot',
+    cwd: options.cwd || snapshotDir,
   })
 
   // Retry with exponential backoff — handles sandbox cold starts

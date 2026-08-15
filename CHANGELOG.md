@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Improved
+
+- Reworked the public landing page, first-run settings, chat shell, README, social preview, and responsive states around the outcome-led promise: **Search your code. See the proof.**
+- Added canonical and social URLs, route-aware indexing controls, `SoftwareApplication` JSON-LD, a generated sitemap, and a sitemap-aware robots response.
+- Updated Railway config-as-code to the supported Dockerfile builder with graceful deploy overlap/draining, minimized both runtime images, and made lockfile failures fail the build.
+- Added a pinned, least-privilege GitHub Actions release gate and a private vulnerability-reporting policy.
+- Added GitHub URL normalization, sparse `contentPath` sync, direct-sync precedence, idempotent demo setup, strict failure reporting, and safer source validation.
+- Made readiness checks cover PostgreSQL, Redis, and the sandbox while allowing a fresh deployment to report `needs_configuration` until an AI key is added.
+- Aligned the workspace dependency graph and added repeatable security/input tests.
+
+### Fixed
+
+- Removed the Nuxt hydration mismatch, fixed repeated-message loading feedback, honored safe post-login redirects, and restored the Redis-unavailable rate-limit fallback.
+- Confined sandbox working directories to the snapshot root and blocked write/execute modes hidden behind otherwise read-oriented shell tools.
+- Closed public registration after the first workspace owner by default, with an explicit `ALLOW_PUBLIC_SIGNUP=true` opt-in for shared deployments.
+- Replaced unsupported cost and runtime-isolation claims in the current documentation with verifiable behavior and limits.
+
 ## [1.5.0] - 2026-08-12
 
 ### Added — streaming chat + template polish

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "gVisor sandbox worker for the Grep Knowledge Agent",
+  "description": "Policy-restricted sandbox worker for the Grep Knowledge Agent",
   "scripts": {
     "start": "node index.ts",
     "dev": "bun run index.ts",

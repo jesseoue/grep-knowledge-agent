@@ -1,5 +1,5 @@
 /**
- * Sandbox service — the gVisor-protected read-only shell.
+ * Sandbox service — an isolated, policy-restricted shell sidecar.
  *
  * Mounts the shared snapshot volume at /snapshot and executes allowlisted
  * read-only commands (grep/find/cat/head/...) inside it. This replaces the
@@ -14,6 +14,7 @@
 import { createServer } from 'node:http'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import path from 'node:path'
 import {
   validateShellCommand,
   BLOCKED_SHELL_PATTERNS,
@@ -22,7 +23,11 @@ import {
 
 const execFileAsync = promisify(execFile)
 
-const SNAPSHOT_DIR = process.env.SNAPSHOT_DIR || '/snapshot'
+const configuredSnapshotDir = (process.env.SNAPSHOT_DIR || '/snapshot').replace(/\/+$/, '')
+if (!configuredSnapshotDir || configuredSnapshotDir === '/' || !/^\/(?!.*(?:^|\/)\.\.(?:\/|$))[A-Za-z0-9._/-]+$/.test(configuredSnapshotDir)) {
+  throw new Error('SNAPSHOT_DIR must be a safe absolute path below the filesystem root')
+}
+const SNAPSHOT_DIR = configuredSnapshotDir
 const PORT = Number(process.env.PORT || 3200)
 // Shared secret between web and sandbox services. If SANDBOX_SECRET is set,
 // all requests must include it in the X-Sandbox-Key header. This prevents
@@ -55,7 +60,7 @@ function validateSyncCommand(command: string): { ok: true } | { ok: false, reaso
     }
   }
 
-  // Extract path tokens and verify they're within /snapshot
+  // Extract path tokens and verify they're within the configured snapshot root.
   const tokens = extractPotentialPathTokens(command)
   for (const token of tokens) {
     if (token.startsWith('../')) {
@@ -94,6 +99,13 @@ function validateSyncCommand(command: string): { ok: true } | { ok: false, reaso
 function json(res: import('node:http').ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json' })
   res.end(JSON.stringify(body))
+}
+
+function resolveSandboxCwd(requestedCwd?: string): string | null {
+  const cwd = requestedCwd
+    ? path.isAbsolute(requestedCwd) ? path.resolve(requestedCwd) : path.resolve(SNAPSHOT_DIR, requestedCwd)
+    : SNAPSHOT_DIR
+  return isPathWithinDirectory(cwd, SNAPSHOT_DIR) ? cwd : null
 }
 
 /** Extract path-like tokens from a command string for path validation. */
@@ -183,7 +195,11 @@ const server = createServer(async (req, res) => {
       return
     }
 
-    const cwd = parsed.cwd || SNAPSHOT_DIR
+    const cwd = resolveSandboxCwd(parsed.cwd)
+    if (!cwd) {
+      json(res, 400, { error: 'Working directory must stay inside the snapshot root' })
+      return
+    }
     const sessionId = parsed.sessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 
     const results = []
@@ -221,7 +237,11 @@ const server = createServer(async (req, res) => {
       return
     }
 
-    const cwd = parsed.cwd || SNAPSHOT_DIR
+    const cwd = resolveSandboxCwd(parsed.cwd)
+    if (!cwd) {
+      json(res, 400, { error: 'Working directory must stay inside the snapshot root' })
+      return
+    }
     const sessionId = parsed.sessionId || `sync_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 
     const results = []
