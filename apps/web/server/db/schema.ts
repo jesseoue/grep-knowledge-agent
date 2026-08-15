@@ -108,9 +108,9 @@ export const verifications = pgTable('verification', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 
-// --- Usage / credit metering -------------------------------------------------
-// Append-only ledger of token usage per request. Powers credit-based quotas
-// (MAX_TOKENS_PER_USER) and the /api/usage dashboard.
+// --- Usage / budget metering -------------------------------------------------
+// Append-only model-call ledger. Token totals power legacy credit quotas, while
+// micro-USD costs and reservations enforce the global UTC daily demo budget.
 export const usage = pgTable('usage', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
@@ -119,8 +119,32 @@ export const usage = pgTable('usage', {
   inputTokens: integer('input_tokens').notNull().default(0),
   outputTokens: integer('output_tokens').notNull().default(0),
   totalTokens: integer('total_tokens').notNull().default(0),
+  costMicrousd: integer('cost_microusd'),
+  requestId: text('request_id'),
+  callKind: text('call_kind', { enum: ['router', 'answer'] }).notNull().default('answer'),
   ...timestamps,
 }, table => [
   index('usage_user_id_idx').on(table.userId),
   index('usage_created_at_idx').on(table.createdAt),
+  index('usage_request_id_idx').on(table.requestId),
+])
+
+/**
+ * One row per admitted chat request when DAILY_LLM_BUDGET_USD is enabled.
+ * Rows start as reserved, then become settled with the provider's exact cost.
+ * A stranded reservation remains charged for that UTC day, which fails safely
+ * if a process exits after the provider accepts a request.
+ */
+export const budgetReservations = pgTable('budget_reservations', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  budgetDate: text('budget_date').notNull(),
+  reservedMicrousd: integer('reserved_microusd').notNull(),
+  chargedMicrousd: integer('charged_microusd'),
+  status: text('status', { enum: ['reserved', 'settled', 'released'] }).notNull().default('reserved'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  ...timestamps,
+}, table => [
+  index('budget_reservations_date_idx').on(table.budgetDate),
+  index('budget_reservations_user_date_idx').on(table.userId, table.budgetDate),
 ])

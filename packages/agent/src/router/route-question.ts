@@ -1,5 +1,5 @@
 import { generateText, Output } from 'ai'
-import type { UIMessage } from 'ai'
+import type { LanguageModelUsage, ProviderMetadata, UIMessage } from 'ai'
 import { ROUTER_SYSTEM_PROMPT } from '../prompts/router'
 import { agentConfigSchema, getDefaultConfig } from './schema'
 import type { AgentConfig } from './schema'
@@ -23,6 +23,10 @@ function extractQuestionFromMessages(messages: UIMessage[]): string {
 export async function routeQuestion(
   messages: UIMessage[],
   model: Parameters<typeof generateText>[0]['model'],
+  onUsage?: (telemetry: {
+    usage: LanguageModelUsage
+    providerMetadata: ProviderMetadata | undefined
+  }) => void,
 ): Promise<AgentConfig> {
   const question = extractQuestionFromMessages(messages)
   if (!question) {
@@ -30,20 +34,26 @@ export async function routeQuestion(
   }
 
   try {
-    const { output } = await generateText({
+    const result = await generateText({
       model,
       output: Output.object({ schema: agentConfigSchema }),
       messages: [
         { role: 'system', content: ROUTER_SYSTEM_PROMPT },
         { role: 'user', content: `Question: ${question}` },
       ],
+      maxOutputTokens: 200,
     })
 
-    if (!output) {
+    onUsage?.({
+      usage: result.totalUsage,
+      providerMetadata: result.providerMetadata,
+    })
+
+    if (!result.output) {
       return getDefaultConfig()
     }
 
-    return output
+    return result.output
   } catch {
     return getDefaultConfig()
   }

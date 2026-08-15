@@ -9,6 +9,18 @@ interface ChatMsg {
   trace?: { cmd: string, tool: string }[]
 }
 interface Usage { inputTokens?: number, outputTokens?: number, totalTokens?: number }
+interface UsageSummary {
+  totalTokens: number
+  totalRequests: number
+  quota: number | null
+  remaining: number | null
+  dailyBudget: {
+    limitUsd: number
+    usedUsd: number
+    remainingUsd: number
+    resetAt: string
+  } | null
+}
 
 const message = ref('')
 const loading = ref(false)
@@ -17,7 +29,7 @@ const sources = ref<{ total: number, snapshotRepo: string | null } | null>(null)
 const chatScroll = ref<HTMLDivElement | null>(null)
 const showTrace = ref(false)
 const lastUsage = ref<Usage | null>(null)
-const usageSummary = ref<{ totalTokens: number, totalRequests: number, quota: number | null, remaining: number | null } | null>(null)
+const usageSummary = ref<UsageSummary | null>(null)
 const quotaExceeded = ref(false)
 const rateLimited = ref(false)
 const copiedIdx = ref<number | null>(null)
@@ -65,6 +77,15 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
+async function loadUsageSummary() {
+  try {
+    const res = await fetch('/api/usage')
+    if (res.ok) usageSummary.value = await res.json()
+  } catch {
+    // usage unavailable — non-fatal
+  }
+}
+
 onMounted(async () => {
   try {
     const res = await fetch('/api/sources')
@@ -76,14 +97,7 @@ onMounted(async () => {
     // sources unavailable — non-fatal
   }
 
-  try {
-    const res = await fetch('/api/usage')
-    if (res.ok) {
-      usageSummary.value = await res.json()
-    }
-  } catch {
-    // usage unavailable — non-fatal
-  }
+  await loadUsageSummary()
 })
 
 async function sendMessage() {
@@ -155,6 +169,7 @@ async function sendMessage() {
           assistantMsg.value.references = data.references
           assistantMsg.value.trace = data.trace
           lastUsage.value = data.usage || null
+          await loadUsageSummary()
         } else if (data.type === 'error') {
           throw new Error(data.message || 'Agent stream failed')
         }
@@ -408,6 +423,18 @@ async function sendMessage() {
               <p class="mt-1 font-mono text-[11px] text-zinc-400">
                 {{ usageSummary.totalTokens.toLocaleString() }} tokens · {{ usageSummary.totalRequests }} requests
               </p>
+              <template v-if="usageSummary.dailyBudget">
+                <p class="mt-3 font-mono text-[10px] text-zinc-600">daily model budget · resets 00:00 UTC</p>
+                <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-zinc-800" aria-hidden="true">
+                  <div
+                    class="h-full rounded-full bg-amber-400 transition-[width]"
+                    :style="{ width: `${Math.min(100, (usageSummary.dailyBudget.usedUsd / usageSummary.dailyBudget.limitUsd) * 100)}%` }"
+                  />
+                </div>
+                <p class="mt-1 font-mono text-[11px] text-zinc-400">
+                  ${{ usageSummary.dailyBudget.remainingUsd.toFixed(2) }} of ${{ usageSummary.dailyBudget.limitUsd.toFixed(2) }} left
+                </p>
+              </template>
             </div>
           </ClientOnly>
         </div>

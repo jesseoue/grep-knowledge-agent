@@ -42,9 +42,26 @@ model per question difficulty from that provider.
 | `SNAPSHOT_DIR` | `/snapshot` | Snapshot root shared by web validation and the sandbox. Keep the default on Railway. |
 | `SANDBOX_SECRET` | — | Optional shared key for authenticated web-to-sandbox requests. Recommended for production. |
 | `PUBLIC_SITE_URL` | — | Your public app URL (used for auth trusted origins). |
+| `DAILY_LLM_BUDGET_USD` | `0` (unlimited) | Atomic global USD budget per UTC day. Set `4` for a small public demo. |
+| `MAX_LLM_REQUEST_USD` | `0.25` | Amount reserved before each chat and charged when exact provider cost is unavailable. |
+| `AI_MAX_OUTPUT_TOKENS` | `800` | Maximum output tokens for each model step. |
+| `AI_MAX_STEPS` | `8` | Hard ceiling on model/tool iterations per answer. |
+| `AI_MAX_MODEL_TIER` | `powerful` | Highest tier allowed. Use `cheap` for public demos. |
+| `AI_RATE_LIMIT_PER_MINUTE` | `10` | Per-user request limit backed by Redis. |
+| `AI_ENABLED` | `true` | Emergency kill switch; set `false` to pause model calls. |
 | `MAX_TOKENS_PER_USER` | `0` (unlimited) | Credit quota — max tokens a user may consume (all-time). Set to cap free usage and bill against credits. |
 | `GITHUB_CLIENT_ID` | — | GitHub OAuth client ID. **Optional** — enables "Continue with GitHub" on the login page. Email/password works without it. |
 | `GITHUB_CLIENT_SECRET` | — | GitHub OAuth client secret. Optional, paired with the client ID. |
+
+### Recommended demo budget
+
+Use a dedicated provider key with its own provider-side daily limit. Then set
+`DAILY_LLM_BUDGET_USD=4`, `MAX_LLM_REQUEST_USD=0.25`,
+`AI_MAX_MODEL_TIER=cheap`, `AI_MAX_OUTPUT_TOKENS=800`, `AI_MAX_STEPS=8`, and
+`AI_RATE_LIMIT_PER_MINUTE=5`. PostgreSQL atomically reserves spend before the
+routing call, exact OpenRouter response costs reconcile that reservation, and
+missing cost data is conservatively charged at the reserved maximum. The
+provider limit remains an independent final backstop.
 
 ---
 

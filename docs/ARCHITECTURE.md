@@ -105,7 +105,8 @@ User clicks "Sync"             →  POST /api/sync
 ```
 User message → POST /api/chats
               ├─ rate limit check (Redis or in-memory, 20 req/min per user)
-              ├─ credit quota check (MAX_TOKENS_PER_USER, optional)
+              ├─ atomic daily USD reservation (DAILY_LLM_BUDGET_USD, optional)
+              ├─ legacy token quota check (MAX_TOKENS_PER_USER, optional)
               ├─ router model classifies complexity (4/8/15/25 steps)
               ├─ main model instantiated from complexity tier + provider keys
               ├─ generateText with bash tools:

@@ -37,10 +37,30 @@ export default defineEventHandler(async (event) => {
     checks.ai = 'error'
   }
 
+  const { getAiBudgetConfig, microusdToUsd } = await import('../lib/ai-budget-config')
+  const aiBudget = getAiBudgetConfig()
+  checks.aiBudget = !aiBudget.enabled
+    ? 'paused'
+    : aiBudget.dailyBudgetMicrousd > 0
+      ? `$${microusdToUsd(aiBudget.dailyBudgetMicrousd).toFixed(2)}/day`
+      : 'unlimited'
+
+  if (aiBudget.dailyBudgetMicrousd > 0) {
+    try {
+      const { getDb, schema } = await import('../db')
+      await getDb().select({ id: schema.budgetReservations.id }).from(schema.budgetReservations).limit(1)
+      checks.aiBudgetStore = 'ok'
+    } catch {
+      checks.aiBudgetStore = 'error'
+    }
+  }
+
   // Provider keys are user configuration, not process readiness. Keeping them
   // out of the 503 decision lets a fresh Railway deploy become reachable so
   // the owner can finish setup without the platform killing the service.
-  const infrastructureOk = ['db', 'redis', 'sandbox'].every(name => checks[name] === 'ok')
+  const requiredChecks = ['db', 'redis', 'sandbox']
+  if (aiBudget.dailyBudgetMicrousd > 0) requiredChecks.push('aiBudgetStore')
+  const infrastructureOk = requiredChecks.every(name => checks[name] === 'ok')
   const fullyConfigured = infrastructureOk && checks.ai === 'ok'
   setResponseStatus(event, infrastructureOk ? 200 : 503)
 

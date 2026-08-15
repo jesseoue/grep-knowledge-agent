@@ -112,6 +112,13 @@ Repository sync uses a separate, validated sandbox endpoint. Chat-time tool call
 | `SNAPSHOT_DIR` | No | Shared snapshot path; defaults to `/snapshot` |
 | `PUBLIC_SITE_URL` | No | Custom public origin for authentication |
 | `ALLOW_PUBLIC_SIGNUP` | No | Defaults to `false`; set `true` only for a deliberately shared workspace |
+| `DAILY_LLM_BUDGET_USD` | No | Atomic global model budget per UTC day; `0` is unlimited |
+| `MAX_LLM_REQUEST_USD` | No | Pre-request reservation and fail-safe charge; defaults to `$0.25` |
+| `AI_MAX_OUTPUT_TOKENS` | No | Maximum output per model step; defaults to `800` |
+| `AI_MAX_STEPS` | No | Maximum agent/model steps per answer; defaults to `8` |
+| `AI_MAX_MODEL_TIER` | No | Highest allowed tier: `cheap`, `balanced`, or `powerful` |
+| `AI_RATE_LIMIT_PER_MINUTE` | No | Per-user request ceiling; defaults to `10` |
+| `AI_ENABLED` | No | Emergency model-call kill switch; defaults to `true` |
 | `MAX_TOKENS_PER_USER` | No | Optional all-time per-user token quota; `0` is unlimited |
 | GitHub OAuth credentials | No | Enables GitHub sign-in |
 

@@ -38,6 +38,10 @@ export default defineNitroPlugin(async () => {
     console.log('[db] migrations applied')
   } catch (error) {
     console.error('[db] migration failed:', error)
+    // Fail the new deployment so Railway keeps the previous healthy instance.
+    // Starting against a partial schema would make auth/chat failures harder to
+    // recover from than a clean deploy rollback.
+    throw error
   } finally {
     // Only close the migration's own connection, never the app pool.
     await sql?.end().catch(() => {})

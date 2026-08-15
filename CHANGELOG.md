@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Improved
 
+- Added an atomic UTC daily LLM budget with OpenRouter cost reconciliation, fail-safe reservations, an emergency kill switch, bounded output/steps/model tier/rate, and a live remaining-budget meter.
 - Made first-owner setup unmistakable: fresh deployments lead with **Create owner**, while claimed deployments explain why signup is closed and link to safe recovery.
 - Added an operator-only Railway SSH recovery utility, generated temporary-password support, session revocation, and an authenticated in-app password-change panel.
 - Reworked the public landing page, first-run settings, chat shell, README, social preview, and responsive states around the outcome-led promise: **Search your code. See the proof.**

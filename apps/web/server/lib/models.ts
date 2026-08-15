@@ -19,6 +19,7 @@ import {
   tierForComplexity,
 } from '@grep/agent'
 import type { Provider, ModelTier, Complexity } from '@grep/agent'
+import { openRouterMetadataExtractor } from './openrouter-usage'
 
 interface RuntimeAIConfig {
   openrouterApiKey: string
@@ -69,6 +70,7 @@ function buildModel(provider: Provider, modelId: string): LanguageModel {
         name: 'openrouter',
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: keys.openrouter,
+        metadataExtractor: openRouterMetadataExtractor,
         headers: {
           'HTTP-Referer': process.env.PUBLIC_SITE_URL || 'https://railway.com',
           'X-Title': 'Grep Knowledge Agent',
@@ -99,8 +101,14 @@ export function resolveRouterModel(): LanguageModel {
 }
 
 /** Resolve the model that should answer a question of a given complexity. */
-export function resolveModelForComplexity(complexity: Complexity): LanguageModel {
-  return resolveModelForTier(tierForComplexity(complexity))
+export function resolveModelForComplexity(
+  complexity: Complexity,
+  maxTier: ModelTier = 'powerful',
+): LanguageModel {
+  const tiers: ModelTier[] = ['cheap', 'balanced', 'powerful']
+  const requestedTier = tierForComplexity(complexity)
+  const cappedTier = tiers[Math.min(tiers.indexOf(requestedTier), tiers.indexOf(maxTier))] || 'cheap'
+  return resolveModelForTier(cappedTier)
 }
 
 /** Check if at least one AI provider is configured. */
