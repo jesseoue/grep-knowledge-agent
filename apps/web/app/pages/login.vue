@@ -10,6 +10,9 @@ const loading = ref(false)
 const githubLoading = ref(false)
 const githubEnabled = ref(false)
 const signupEnabled = ref(false)
+const workspaceClaimed = ref(false)
+const configLoaded = ref(false)
+const configUnavailable = ref(false)
 const error = ref('')
 const route = useRoute()
 
@@ -21,14 +24,21 @@ const postAuthPath = computed(() => {
 onMounted(async () => {
   try {
     const res = await fetch('/api/auth/config')
-    if (res.ok) {
-      const data = await res.json()
-      githubEnabled.value = !!data.githubEnabled
-      signupEnabled.value = !!data.signupEnabled
-      if (!signupEnabled.value && mode.value === 'signup') mode.value = 'signin'
-    }
+    if (!res.ok) throw new Error('Could not load workspace status')
+    const data = await res.json()
+    githubEnabled.value = !!data.githubEnabled
+    signupEnabled.value = !!data.signupEnabled
+    workspaceClaimed.value = !!data.workspaceClaimed
+
+    // A fresh private deployment should lead with owner creation. Once the
+    // workspace is claimed, sign-in is the only public path.
+    if (!workspaceClaimed.value && signupEnabled.value) mode.value = 'signup'
+    else if (!signupEnabled.value) mode.value = 'signin'
   } catch {
     githubEnabled.value = false
+    configUnavailable.value = true
+  } finally {
+    configLoaded.value = true
   }
 })
 
@@ -141,9 +151,15 @@ async function githubLogin() {
 
         <section class="rise lg:pl-2" style="animation-delay: 0.16s">
           <div class="mb-6">
-            <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-amber-400">private workspace</p>
-            <h2 class="mt-2 text-2xl font-bold tracking-[-0.04em] text-zinc-100">Start searching.</h2>
-            <p class="mt-2 text-[12px] leading-relaxed text-zinc-500">{{ signupEnabled ? 'Sign in to your deployment, or create the first workspace account.' : 'Sign in to this private workspace.' }}</p>
+            <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-amber-400">
+              {{ !configLoaded ? 'checking workspace' : workspaceClaimed ? 'owner account configured' : 'first-run setup' }}
+            </p>
+            <h2 class="mt-2 text-2xl font-bold tracking-[-0.04em] text-zinc-100">
+              {{ workspaceClaimed ? 'Welcome back.' : 'Claim your workspace.' }}
+            </h2>
+            <p class="mt-2 text-[12px] leading-relaxed text-zinc-500">
+              {{ workspaceClaimed ? 'Owner setup is complete. Sign in with the first account created for this deployment.' : 'Create the first owner account. Public registration closes automatically afterward.' }}
+            </p>
           </div>
 
           <div class="terminal-window border-zinc-700/70">
@@ -154,10 +170,37 @@ async function githubLogin() {
 
             <div class="p-5 sm:p-6">
               <UAlert v-if="error" color="error" variant="subtle" :title="error" class="mb-4" icon="i-lucide-triangle-alert" />
+              <UAlert
+                v-else-if="configUnavailable"
+                color="error"
+                variant="subtle"
+                title="Workspace status unavailable"
+                description="Refresh the page before signing in or creating an account."
+                class="mb-4"
+                icon="i-lucide-wifi-off"
+              />
+              <UAlert
+                v-else-if="workspaceClaimed"
+                color="neutral"
+                variant="subtle"
+                title="Owner setup complete"
+                description="Public signup is closed to protect this private workspace."
+                class="mb-4"
+                icon="i-lucide-lock-keyhole"
+              />
+              <UAlert
+                v-else-if="configLoaded"
+                color="success"
+                variant="subtle"
+                title="Create the first owner account"
+                description="This one-time setup claims the deployment and closes public signup."
+                class="mb-4"
+                icon="i-lucide-shield-check"
+              />
 
               <div class="mb-5 grid gap-1 rounded-lg border border-zinc-800 bg-zinc-950 p-1 font-mono text-[11px]" :class="signupEnabled ? 'grid-cols-2' : 'grid-cols-1'">
-                <button type="button" class="rounded-md py-2 font-medium transition" :class="mode === 'signin' ? 'bg-amber-400/15 text-amber-300 shadow-[inset_0_0_18px_rgba(251,191,36,0.05)]' : 'text-zinc-500 hover:text-zinc-300'" @click="mode = 'signin'; error = ''">sign in</button>
-                <button v-if="signupEnabled" type="button" class="rounded-md py-2 font-medium transition" :class="mode === 'signup' ? 'bg-amber-400/15 text-amber-300 shadow-[inset_0_0_18px_rgba(251,191,36,0.05)]' : 'text-zinc-500 hover:text-zinc-300'" @click="mode = 'signup'; error = ''">create account</button>
+                <button type="button" :disabled="!configLoaded" class="rounded-md py-2 font-medium transition disabled:cursor-wait disabled:opacity-50" :class="mode === 'signin' ? 'bg-amber-400/15 text-amber-300 shadow-[inset_0_0_18px_rgba(251,191,36,0.05)]' : 'text-zinc-500 hover:text-zinc-300'" @click="mode = 'signin'; error = ''">sign in</button>
+                <button v-if="signupEnabled" type="button" :disabled="!configLoaded" class="rounded-md py-2 font-medium transition disabled:cursor-wait disabled:opacity-50" :class="mode === 'signup' ? 'bg-amber-400/15 text-amber-300 shadow-[inset_0_0_18px_rgba(251,191,36,0.05)]' : 'text-zinc-500 hover:text-zinc-300'" @click="mode = 'signup'; error = ''">create owner</button>
               </div>
 
               <form class="space-y-4" @submit.prevent="submit">
@@ -176,8 +219,8 @@ async function githubLogin() {
                   </div>
                   <UInput id="auth-password" v-model="password" class="w-full" type="password" placeholder="••••••••" :autocomplete="mode === 'signup' ? 'new-password' : 'current-password'" minlength="8" required />
                 </div>
-                <UButton block type="submit" color="primary" size="lg" :loading="loading" icon="i-lucide-arrow-right" class="!mt-5 !font-semibold">
-                  {{ mode === 'signin' ? 'Enter workspace' : 'Create workspace account' }}
+                <UButton block type="submit" color="primary" size="lg" :loading="loading" :disabled="!configLoaded || configUnavailable" icon="i-lucide-arrow-right" class="!mt-5 !font-semibold">
+                  {{ mode === 'signin' ? 'Enter workspace' : 'Create owner account' }}
                 </UButton>
               </form>
 
@@ -187,6 +230,19 @@ async function githubLogin() {
               </template>
 
               <p class="mt-5 text-center font-mono text-[9px] leading-relaxed text-zinc-600">Your credentials and chat history stay inside this deployment.</p>
+
+              <div v-if="workspaceClaimed" class="mt-5 border-t border-zinc-800 pt-4 text-center">
+                <p class="text-[11px] font-medium text-zinc-400">Lost access?</p>
+                <p class="mt-1 text-[10px] leading-relaxed text-zinc-600">Recover the owner securely through Railway SSH. Signup stays closed and your data is preserved.</p>
+                <a
+                  href="https://github.com/jesseoue/grep-knowledge-agent#recover-owner-access"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="mt-2 inline-flex items-center gap-1 font-mono text-[10px] text-amber-300 transition hover:text-amber-200"
+                >
+                  owner recovery guide <span aria-hidden="true">↗</span>
+                </a>
+              </div>
             </div>
           </div>
         </section>

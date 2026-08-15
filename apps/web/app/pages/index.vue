@@ -202,6 +202,7 @@ async function sendMessage() {
             color="neutral"
             variant="ghost"
             size="sm"
+            aria-label="Clear chat"
             class="!text-zinc-400 hover:!text-zinc-100"
             :disabled="loading"
             @click="clearChat"
@@ -215,6 +216,7 @@ async function sendMessage() {
           color="neutral"
           variant="ghost"
           size="sm"
+          aria-label="Knowledge sources"
           class="!text-zinc-400 hover:!text-zinc-100"
         >
           <span class="hidden sm:inline">sources</span>
@@ -224,6 +226,7 @@ async function sendMessage() {
           color="neutral"
           variant="ghost"
           size="sm"
+          aria-label="Toggle command trace"
           class="!text-zinc-400 hover:!text-zinc-100"
           @click="showTrace = !showTrace"
         >
@@ -234,6 +237,7 @@ async function sendMessage() {
           color="neutral"
           variant="ghost"
           size="sm"
+          aria-label="Sign out"
           class="!text-zinc-500 hover:!text-red-400"
           @click="logout"
         >

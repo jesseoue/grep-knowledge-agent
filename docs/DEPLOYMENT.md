@@ -23,11 +23,37 @@ The template also generates and shares `BETTER_AUTH_SECRET` and `SANDBOX_SECRET`
 
    See [ENVIRONMENT.md](ENVIRONMENT.md) for detailed instructions.
 
-2. Open your app and create an email/password account. GitHub OAuth is optional; set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` only if you want GitHub sign-in.
+2. Open your app and choose **Create owner**. The first account claims the deployment, and public signup closes automatically. GitHub OAuth is optional; set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` only if you want GitHub sign-in.
 
 3. Open **Settings** → load the demo source or add a public GitHub source (e.g. `vercel-labs/knowledge-agent-template`) → **Sync**.
 
 4. Ask it anything. It answers with `grep`, not vectors.
+
+### Owner login and recovery
+
+The login screen has two deliberate states:
+
+- **First-run setup** — no account exists, so **Create owner** is shown by default.
+- **Owner setup complete** — the workspace is already claimed, so only sign-in is shown.
+
+If the owner password is lost, use Railway SSH rather than reopening public signup:
+
+```bash
+railway login
+railway link
+railway ssh -s web
+node apps/web/.output/server/recover-owner.mjs
+```
+
+The recovery utility runs inside the private web service, hashes the replacement password with Better Auth's configured password hasher, updates only the selected existing account, and revokes its sessions. Password entry is hidden. No recovery route is exposed on the public app.
+
+For a generated temporary password:
+
+```bash
+railway ssh -s web "node apps/web/.output/server/recover-owner.mjs --email owner@example.com --generate --yes"
+```
+
+After signing in, change the temporary password under **Settings → Workspace security**. Workspace data is not deleted by either recovery path.
 
 ## Manual deploy
 
@@ -61,7 +87,7 @@ docker run -p 3200:3200 -v /tmp/snapshot:/snapshot grep-agent-sandbox
 ## Railway config
 
 - `railway.json` — root config-as-code: Dockerfile builds, healthcheck at `/api/health`, always-restart policy, and graceful deployment overlap/draining.
-- `apps/web/Dockerfile` — multi-stage: bun install → Nuxt build → minimal node runtime.
+- `apps/web/Dockerfile` — multi-stage: bun install → Nuxt build → minimal node runtime, including the Railway SSH owner-recovery utility.
 - `sandbox-service/Dockerfile` — bundled TypeScript server on node slim + grep/find/coreutils.
 
 The template composer sets `RAILWAY_DOCKERFILE_PATH` separately for the web and sandbox services because this is a monorepo. Keep those paths as `/apps/web/Dockerfile` and `/sandbox-service/Dockerfile` when cloning the template manually.

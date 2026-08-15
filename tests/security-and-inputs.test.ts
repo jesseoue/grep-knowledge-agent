@@ -12,6 +12,7 @@ import {
 } from '../apps/web/server/lib/source-validation'
 import { getSnapshotDir } from '../apps/web/server/lib/snapshot-path'
 import { normalizePublicOrigin } from '../apps/web/server/lib/public-origin'
+import { allowsPublicSignup } from '../apps/web/server/lib/registration'
 
 const policies = [
   ['SDK', validateSdkCommand],
@@ -100,5 +101,23 @@ describe('public URL normalization', () => {
     expect(normalizePublicOrigin('javascript:alert(1)')).toBeNull()
     expect(normalizePublicOrigin('https://user:pass@example.com')).toBeNull()
     expect(normalizePublicOrigin('')).toBeNull()
+  })
+})
+
+describe('private workspace registration', () => {
+  const originalValue = process.env.ALLOW_PUBLIC_SIGNUP
+
+  afterEach(() => {
+    if (originalValue === undefined) delete process.env.ALLOW_PUBLIC_SIGNUP
+    else process.env.ALLOW_PUBLIC_SIGNUP = originalValue
+  })
+
+  test('requires an explicit true value to reopen public signup', () => {
+    for (const value of ['', 'false', '1', 'yes']) {
+      process.env.ALLOW_PUBLIC_SIGNUP = value
+      expect(allowsPublicSignup()).toBe(false)
+    }
+    process.env.ALLOW_PUBLIC_SIGNUP = ' TRUE '
+    expect(allowsPublicSignup()).toBe(true)
   })
 })

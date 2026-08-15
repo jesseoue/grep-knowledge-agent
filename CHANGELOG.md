@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Improved
 
+- Made first-owner setup unmistakable: fresh deployments lead with **Create owner**, while claimed deployments explain why signup is closed and link to safe recovery.
+- Added an operator-only Railway SSH recovery utility, generated temporary-password support, session revocation, and an authenticated in-app password-change panel.
 - Reworked the public landing page, first-run settings, chat shell, README, social preview, and responsive states around the outcome-led promise: **Search your code. See the proof.**
 - Added canonical and social URLs, route-aware indexing controls, `SoftwareApplication` JSON-LD, a generated sitemap, and a sitemap-aware robots response.
 - Updated Railway config-as-code to the supported Dockerfile builder with graceful deploy overlap/draining, minimized both runtime images, and made lockfile failures fail the build.

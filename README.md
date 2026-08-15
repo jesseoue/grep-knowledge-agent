@@ -46,11 +46,34 @@ Railway provisions four services and wires their private URLs, generated secrets
 After deployment:
 
 1. Add one AI key to the Web service. `OPENROUTER_API_KEY` is the simplest option; `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `GOOGLE_GENERATIVE_AI_API_KEY` also work. This is the only required manual variable.
-2. Open the generated domain and create an email/password account.
+2. Open the generated domain and choose **Create owner**. The first account claims the private workspace; public signup then closes automatically.
 3. Choose **Load demo source**, or add a public GitHub repository such as `nuxt/nuxt`.
 4. Sync, then ask a question. The trace panel shows how the answer was found.
 
 GitHub OAuth is optional. Add `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` only if you want a **Continue with GitHub** button.
+
+## Recover owner access
+
+If the login page says **Owner setup complete**, the deployment has already been claimed. Sign in with the first account created for it. The app intentionally does not expose a public password-reset endpoint because the template does not require an email provider.
+
+If you lose the password, recover it through authenticated Railway SSH. This preserves chats and sources, keeps signup closed, and revokes the owner's existing sessions:
+
+```bash
+railway login
+railway link
+railway ssh -s web
+node apps/web/.output/server/recover-owner.mjs
+```
+
+The utility lists existing accounts when needed, asks which owner to recover, accepts the new password through hidden terminal input, and requires an explicit confirmation. Exit the SSH session, sign in, then use **Settings → Workspace security** for future password changes.
+
+For controlled automation, generate a strong temporary password and print it once:
+
+```bash
+railway ssh -s web "node apps/web/.output/server/recover-owner.mjs --email owner@example.com --generate --yes"
+```
+
+Treat the generated password as a secret and change it immediately after signing in.
 
 ## Good fits
 
@@ -132,6 +155,7 @@ bun run verify
 - A shared `SANDBOX_SECRET` can authenticate private web-to-sandbox requests.
 - The sandbox rejects browser-originated requests.
 - Registration closes after the first workspace owner unless `ALLOW_PUBLIC_SIGNUP=true` is set explicitly.
+- Owner recovery runs only through authenticated Railway SSH; it is not a public HTTP route.
 
 This is defense in depth, not a substitute for reviewing the template and configuring Railway private networking before using sensitive repositories. Public repository sync is supported out of the box; private repository access is not built in.
 

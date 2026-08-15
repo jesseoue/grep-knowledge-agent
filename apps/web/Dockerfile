@@ -34,6 +34,9 @@ ENV NITRO_HOST=0.0.0.0
 # dependencies. Copying only this output avoids the 800+ MB workspace tree.
 COPY --from=build --chown=node:node /app/apps/web/.output ./apps/web/.output
 COPY --from=build --chown=node:node /app/apps/web/server/db/migrations ./apps/web/server/db/migrations
+# Keep the private, operator-only recovery utility in the runtime image so it
+# can be invoked through authenticated Railway SSH without exposing an endpoint.
+COPY --from=build --chown=node:node /app/apps/web/scripts/recover-owner.mjs ./apps/web/.output/server/recover-owner.mjs
 
 # Run as non-root user for security (node image provides the "node" user)
 USER node

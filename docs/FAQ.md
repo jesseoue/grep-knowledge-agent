@@ -124,6 +124,12 @@ console.log(result.stdout)
 
 ## Troubleshooting
 
+### Why is there no signup button?
+
+This is expected when **Owner setup complete** appears. The first account created on a private deployment becomes the workspace owner, and public signup closes automatically. Sign in with that original account. A fresh deployment instead opens directly in **Create owner** mode.
+
+If you lost the owner password, do not set `ALLOW_PUBLIC_SIGNUP=true`. Use the private Railway SSH recovery utility documented in [Deployment → Owner login and recovery](DEPLOYMENT.md#owner-login-and-recovery). It preserves workspace data, resets only the selected credential, and revokes existing sessions.
+
 ### "No AI provider configured"
 
 Set at least one of: `OPENROUTER_API_KEY` (recommended), `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` in your Railway project variables.

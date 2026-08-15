@@ -9,6 +9,12 @@ const snapshotContentPath = ref('')
 const loading = ref(false)
 const message = ref('')
 const error = ref('')
+const currentPassword = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+const changingPassword = ref(false)
+const securityMessage = ref('')
+const securityError = ref('')
 
 async function logout() {
   await authClient.signOut()
@@ -154,6 +160,39 @@ async function addDemoSource() {
     loading.value = false
   }
 }
+
+async function changePassword() {
+  securityError.value = ''
+  securityMessage.value = ''
+
+  if (newPassword.value.length < 12) {
+    securityError.value = 'Use at least 12 characters for the new password.'
+    return
+  }
+  if (newPassword.value !== confirmPassword.value) {
+    securityError.value = 'New passwords do not match.'
+    return
+  }
+
+  changingPassword.value = true
+  try {
+    const { error: authError } = await authClient.changePassword({
+      currentPassword: currentPassword.value,
+      newPassword: newPassword.value,
+      revokeOtherSessions: true,
+    })
+    if (authError) throw new Error(authError.message || 'Could not change password')
+
+    currentPassword.value = ''
+    newPassword.value = ''
+    confirmPassword.value = ''
+    securityMessage.value = 'Password updated. Other sessions have been revoked.'
+  } catch (e) {
+    securityError.value = e instanceof Error ? e.message : 'Could not change password'
+  } finally {
+    changingPassword.value = false
+  }
+}
 </script>
 
 <template>
@@ -176,6 +215,7 @@ async function addDemoSource() {
             color="neutral"
             variant="ghost"
             size="sm"
+            aria-label="Sign out"
             class="!text-zinc-500 hover:!text-red-400"
             @click="logout"
           >
@@ -261,7 +301,7 @@ async function addDemoSource() {
       </section>
 
       <!-- Sources list -->
-      <section>
+      <section class="mb-8">
         <h2 class="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-amber-400">❯ sources ({{ sources.length }})</h2>
         <div v-if="sources.length === 0" class="terminal-window">
           <div class="p-8 text-center font-mono text-[11px] leading-relaxed text-zinc-600">
@@ -284,6 +324,50 @@ async function addDemoSource() {
               </div>
             </div>
             <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" size="sm" aria-label="Remove source" class="shrink-0 !text-zinc-500 hover:!text-red-400" @click="removeSource(s.id)" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Workspace security -->
+      <section>
+        <h2 class="mb-2 font-mono text-[11px] font-semibold uppercase tracking-wider text-amber-400">❯ workspace security</h2>
+        <div class="terminal-window">
+          <div class="terminal-titlebar justify-between">
+            <span class="ml-1 font-mono text-[11px] text-zinc-500">session/change-password</span>
+            <span class="font-mono text-[9px] uppercase tracking-[0.12em] text-green-400">owner only</span>
+          </div>
+          <div class="p-5">
+            <div class="mb-5 flex gap-3 rounded-lg border border-zinc-800 bg-zinc-950/70 p-4">
+              <UIcon name="i-lucide-shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-green-400" />
+              <div>
+                <p class="text-sm font-semibold text-zinc-200">Keep owner access recoverable</p>
+                <p class="mt-1 font-mono text-[10px] leading-relaxed text-zinc-500">Changing the password revokes other sessions. If you lose access completely, use the Railway SSH recovery command in the deployment guide—public signup never needs to be reopened.</p>
+              </div>
+            </div>
+
+            <UAlert v-if="securityError" color="error" variant="subtle" :title="securityError" class="mb-4" icon="i-lucide-triangle-alert" />
+            <UAlert v-if="securityMessage" color="success" variant="subtle" :title="securityMessage" class="mb-4" icon="i-lucide-check-circle" />
+
+            <form class="space-y-3" @submit.prevent="changePassword">
+              <div>
+                <label for="current-password" class="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">current password</label>
+                <UInput id="current-password" v-model="currentPassword" class="w-full" type="password" autocomplete="current-password" required />
+              </div>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label for="new-password" class="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">new password</label>
+                  <UInput id="new-password" v-model="newPassword" class="w-full" type="password" autocomplete="new-password" minlength="12" required />
+                </div>
+                <div>
+                  <label for="confirm-password" class="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">confirm password</label>
+                  <UInput id="confirm-password" v-model="confirmPassword" class="w-full" type="password" autocomplete="new-password" minlength="12" required />
+                </div>
+              </div>
+              <div class="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
+                <span class="font-mono text-[9px] text-zinc-600">12–128 characters · other sessions revoked</span>
+                <UButton type="submit" color="primary" icon="i-lucide-key-round" :loading="changingPassword">Update password</UButton>
+              </div>
+            </form>
           </div>
         </div>
       </section>
