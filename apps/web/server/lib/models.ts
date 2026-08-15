@@ -71,6 +71,7 @@ function buildModel(provider: Provider, modelId: string): LanguageModel {
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: keys.openrouter,
         metadataExtractor: openRouterMetadataExtractor,
+        supportsStructuredOutputs: true,
         headers: {
           'HTTP-Referer': process.env.PUBLIC_SITE_URL || 'https://railway.com',
           'X-Title': 'Grep Knowledge Agent',

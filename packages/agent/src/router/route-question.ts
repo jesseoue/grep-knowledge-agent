@@ -37,11 +37,9 @@ export async function routeQuestion(
     const result = await generateText({
       model,
       output: Output.object({ schema: agentConfigSchema }),
-      messages: [
-        { role: 'system', content: ROUTER_SYSTEM_PROMPT },
-        { role: 'user', content: `Question: ${question}` },
-      ],
-      maxOutputTokens: 200,
+      instructions: ROUTER_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: `Question: ${question}` }],
+      maxOutputTokens: 800,
     })
 
     onUsage?.({

@@ -117,6 +117,7 @@ Repository sync uses a separate, validated sandbox endpoint. Chat-time tool call
 | `AI_MAX_OUTPUT_TOKENS` | No | Maximum output per model step; defaults to `800` |
 | `AI_MAX_STEPS` | No | Maximum agent/model steps per answer; defaults to `8` |
 | `AI_MAX_MODEL_TIER` | No | Highest allowed tier: `cheap`, `balanced`, or `powerful` |
+| `AI_ROUTER_ENABLED` | No | Set `false` to remove the extra classification call in public demos |
 | `AI_RATE_LIMIT_PER_MINUTE` | No | Per-user request ceiling; defaults to `10` |
 | `AI_ENABLED` | No | Emergency model-call kill switch; defaults to `true` |
 | `MAX_TOKENS_PER_USER` | No | Optional all-time per-user token quota; `0` is unlimited |

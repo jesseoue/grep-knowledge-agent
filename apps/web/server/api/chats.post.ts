@@ -173,6 +173,7 @@ export default defineEventHandler(async (event) => {
   let routerTelemetry: Parameters<NonNullable<Parameters<typeof routeQuestion>[2]>>[0] | undefined
   let routerConfig: Awaited<ReturnType<typeof routeQuestion>>
   let mainModel: ReturnType<typeof resolveModelForComplexity>
+  let routerWasCalled = false
 
   // Stream the response as SSE. Each event is either:
   //   data: {"type":"text","delta":"..."}     — incremental text
@@ -188,10 +189,20 @@ export default defineEventHandler(async (event) => {
 
   let result
   try {
-    // Classify question complexity to budget steps + model tier.
-    routerConfig = await routeQuestion(messages as any, routerModel, telemetry => {
-      routerTelemetry = telemetry
-    })
+    if (aiLimits.routerEnabled) {
+      // Classification improves automatic tiering for private deployments, but
+      // public demos can skip this extra provider call entirely.
+      routerWasCalled = true
+      routerConfig = await routeQuestion(messages as any, routerModel, telemetry => {
+        routerTelemetry = telemetry
+      })
+    } else {
+      routerConfig = {
+        complexity: 'moderate',
+        maxSteps: aiLimits.maxSteps,
+        reasoning: 'Model router disabled by owner configuration',
+      }
+    }
 
     // Enforce the owner-controlled ceiling even if the classifier asks for more.
     const maxSteps = Math.min(routerConfig.maxSteps, aiLimits.maxSteps)
@@ -259,14 +270,14 @@ export default defineEventHandler(async (event) => {
 
   const routerCostUsd = getOpenRouterCostUsd(routerTelemetry?.providerMetadata)
   const answerStepCosts = (steps || []).map(step => getOpenRouterCostUsd(step.providerMetadata))
-  const hasExactOpenRouterCost = routerCostUsd !== undefined
+  const hasExactOpenRouterCost = (!routerWasCalled || routerCostUsd !== undefined)
     && answerStepCosts.length > 0
     && answerStepCosts.every(cost => cost !== undefined)
   const answerCostUsd = answerStepCosts.every(cost => cost !== undefined)
     ? answerStepCosts.reduce((total, cost) => total + (cost || 0), 0)
     : undefined
   const exactRequestCostUsd = hasExactOpenRouterCost
-    ? routerCostUsd + (answerCostUsd || 0)
+    ? (routerCostUsd || 0) + (answerCostUsd || 0)
     : undefined
 
   // Extract file references from the commands the agent ran

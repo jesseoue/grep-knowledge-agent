@@ -11,6 +11,7 @@ import { getOpenRouterCostUsd, openRouterMetadataExtractor } from '../apps/web/s
 const envNames = [
   'AI_ENABLED', 'DAILY_LLM_BUDGET_USD', 'MAX_LLM_REQUEST_USD',
   'AI_MAX_OUTPUT_TOKENS', 'AI_MAX_STEPS', 'AI_RATE_LIMIT_PER_MINUTE', 'AI_MAX_MODEL_TIER',
+  'AI_ROUTER_ENABLED',
 ] as const
 const originalEnv = Object.fromEntries(envNames.map(name => [name, process.env[name]]))
 
@@ -33,6 +34,7 @@ describe('AI budget configuration', () => {
       maxSteps: 8,
       rateLimitRequests: 10,
       maxModelTier: 'powerful',
+      routerEnabled: true,
     })
   })
 
@@ -44,6 +46,7 @@ describe('AI budget configuration', () => {
     process.env.AI_MAX_STEPS = '0'
     process.env.AI_RATE_LIMIT_PER_MINUTE = '5'
     process.env.AI_MAX_MODEL_TIER = 'CHEAP'
+    process.env.AI_ROUTER_ENABLED = 'false'
     expect(getAiBudgetConfig()).toEqual({
       enabled: false,
       dailyBudgetMicrousd: 4_000_000,
@@ -52,6 +55,7 @@ describe('AI budget configuration', () => {
       maxSteps: 1,
       rateLimitRequests: 5,
       maxModelTier: 'cheap',
+      routerEnabled: false,
     })
   })
 

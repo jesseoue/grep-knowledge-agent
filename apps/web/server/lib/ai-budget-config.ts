@@ -25,6 +25,7 @@ export interface AiBudgetConfig {
   maxSteps: number
   rateLimitRequests: number
   maxModelTier: 'cheap' | 'balanced' | 'powerful'
+  routerEnabled: boolean
 }
 
 function modelTierFromEnv(): AiBudgetConfig['maxModelTier'] {
@@ -47,6 +48,7 @@ export function getAiBudgetConfig(): AiBudgetConfig {
     maxSteps: integerFromEnv('AI_MAX_STEPS', 8, 1, 30),
     rateLimitRequests: integerFromEnv('AI_RATE_LIMIT_PER_MINUTE', 10, 1, 120),
     maxModelTier: modelTierFromEnv(),
+    routerEnabled: process.env.AI_ROUTER_ENABLED?.trim().toLowerCase() !== 'false',
   }
 }
 
